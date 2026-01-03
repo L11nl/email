@@ -83,7 +83,7 @@
       opacity: .55;
     }
 
-    /* ===== Settings Modal (Fix scroll + header visible) ===== */
+    /* ===== Settings Modal ===== */
     .modal-backdrop{
       position: fixed;
       inset: 0;
@@ -120,6 +120,17 @@
     }
 
     .break-any{ word-break: break-word; overflow-wrap: anywhere; }
+
+    /* ✅ مهم جداً: input file لازم ما يكون display:none حتى بعض المتصفحات ما تمنع فتحه */
+    .file-input-real{
+      position: fixed;
+      left: -9999px;
+      top: 0;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
   </style>
 </head>
 
@@ -139,7 +150,6 @@
     </div>
 
     <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto items-start md:items-center">
-      <!-- Top right: links + settings -->
       <div class="flex items-center gap-2 w-full md:w-auto">
         <div id="homeLinks" class="hidden flex-wrap gap-2"></div>
         <button id="settingsBtn" class="press-glow soft tab-pill px-3 py-2 rounded-2xl text-sm font-bold text-slate-100">
@@ -147,10 +157,7 @@
         </button>
       </div>
 
-      <!-- Tabs -->
-      <div id="tabsWrap" class="flex gap-2 flex-wrap">
-        <!-- injected by JS -->
-      </div>
+      <div id="tabsWrap" class="flex gap-2 flex-wrap"></div>
 
       <div class="glass-panel soft px-5 py-3 rounded-2xl text-center shadow-lg shadow-blue-500/10">
         <span class="block text-xs text-slate-400">المتوفر بالمخزون</span>
@@ -165,7 +172,6 @@
 
   <main class="w-full max-w-5xl space-y-5 relative z-10">
 
-    <!-- أدوات ذكية سريعة -->
     <section class="glass-panel soft p-4 rounded-3xl shadow-xl">
       <div class="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
         <div class="flex items-center gap-2">
@@ -218,7 +224,6 @@
       </div>
     </section>
 
-    <!-- تغذية -->
     <section class="glass-panel soft p-5 rounded-3xl shadow-xl">
       <div class="flex justify-between items-center mb-3 gap-3">
         <h2 class="text-lg md:text-xl font-bold text-white flex items-center gap-2">
@@ -258,17 +263,26 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
           </button>
 
           <div class="flex flex-col sm:flex-row gap-2">
-            <button id="importBtn"
-              class="press-glow soft bg-slate-800/55 hover:bg-slate-700/60 border border-slate-700/60 text-white font-bold py-3 px-5 rounded-2xl flex items-center justify-center gap-2">
+            <!-- ✅ FIX جذري: زر الاستيراد صار label مرتبط بـ input -->
+            <label id="importBtn" for="importFile"
+              class="press-glow soft bg-slate-800/55 hover:bg-slate-700/60 border border-slate-700/60 text-white font-bold py-3 px-5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer select-none">
               <i class="fa-solid fa-file-arrow-up text-blue-300"></i>
               <span>TXT</span>
-            </button>
-            <input id="importFile" type="file" accept="*/*" class="hidden" />
+            </label>
+            <input id="importFile" type="file" class="file-input-real" accept=".txt,text/plain" />
 
+            <!-- التصدير حسب البحث -->
             <button id="exportBtn"
               class="press-glow soft bg-slate-800/55 hover:bg-slate-700/60 border border-slate-700/60 text-white font-bold py-3 px-5 rounded-2xl flex items-center justify-center gap-2">
               <i class="fa-solid fa-file-arrow-down text-emerald-300"></i>
-              <span>تصدير</span>
+              <span>تصدير (حسب البحث)</span>
+            </button>
+
+            <!-- ✅ الجديد: تصدير المتبقي بالكامل (حتى لو عندك بحث شغال) -->
+            <button id="exportRemainingBtn"
+              class="press-glow soft bg-emerald-700/18 hover:bg-emerald-700/25 border border-emerald-700/25 text-emerald-100 font-bold py-3 px-5 rounded-2xl flex items-center justify-center gap-2">
+              <i class="fa-solid fa-box-open text-emerald-300"></i>
+              <span>تصدير المتبقي</span>
             </button>
 
             <button id="addBtn"
@@ -388,14 +402,13 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
 
   </main>
 
-  <!-- Toast -->
   <div id="toast"
     class="fixed bottom-5 left-5 bg-slate-900/90 border border-slate-700/70 text-white px-5 py-3 rounded-2xl shadow-2xl transform translate-y-20 opacity-0 transition-all duration-300 z-[70] flex items-center gap-3">
     <i id="toastIcon" class="fa-solid fa-info-circle"></i>
     <span id="toastMsg">تم العملية بنجاح</span>
   </div>
 
-  <!-- Settings Modal -->
+  <!-- Settings Modal (نفس السابق) -->
   <div id="settingsModal" class="modal-backdrop">
     <div class="glass-panel soft modal-card rounded-3xl border border-slate-600/40 p-3">
       <div class="modal-sticky-head">
@@ -503,7 +516,7 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
 
   <script>
     (function () {
-      // ===== DOM =====
+      // DOM
       const stockCountEl = document.getElementById('stockCount');
       const pulledCountEl = document.getElementById('pulledCount');
       const titleNameEl = document.getElementById('titleName');
@@ -543,9 +556,9 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
       const moveBtn = document.getElementById('moveBtn');
       const moveTargetsEl = document.getElementById('moveTargets');
 
-      const importBtn = document.getElementById('importBtn');
       const importFile = document.getElementById('importFile');
       const exportBtn = document.getElementById('exportBtn');
+      const exportRemainingBtn = document.getElementById('exportRemainingBtn');
 
       const toast = document.getElementById('toast');
       const toastMsg = document.getElementById('toastMsg');
@@ -575,13 +588,12 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
       const saveSettingsBtn = document.getElementById('saveSettingsBtn');
       const resetAllBtn = document.getElementById('resetAllBtn');
 
-      // ===== Helpers =====
+      // Helpers
       function safeJsonParse(value, fallback) { try { return JSON.parse(value); } catch { return fallback; } }
       function flash(el){ if(!el) return; el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'), 260); }
 
       function showToast(message, type = 'info') {
         toastMsg.textContent = message;
-
         toast.className =
           "fixed bottom-5 left-5 px-5 py-3 rounded-2xl shadow-2xl transform transition-all duration-300 z-[70] flex items-center gap-3 font-bold border";
 
@@ -629,18 +641,14 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         }
       }
 
-      // ===== Config (inventories + links + toggles) =====
+      // Config
       const CONFIG_KEY = 'smartInventory_config_v1_user';
       const defaultConfig = {
         inventories: [
           { id:'main', name:'الرئيسي', locked:true },
           { id:'gemini', name:'Gemini', locked:false },
-          { id:'go', name:'Go', locked:false } // UI label will be ChatGPT
+          { id:'go', name:'Go', locked:false }
         ],
-        // rules exactly as you asked:
-        // main: to Gemini + Go
-        // Go: to main or Gemini
-        // Gemini: to Go
         moveRules: { main:['gemini','go'], go:['main','gemini'], gemini:['go'] },
         links: [],
         maxLinks: 5,
@@ -667,25 +675,23 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
       function invName(invId){
         const inv = (config.inventories||[]).find(x=>x.id===invId);
         if(!inv) return invId;
-        // Special: Go shown as ChatGPT
         if(inv.id === 'go') return 'ChatGPT';
         return inv.name;
       }
       function serviceLabel(invId){
-        // service label above Email/Pass
         if(invId === 'go') return 'ChatGPT سنوي';
         if(invId === 'gemini') return 'Gemini سنوي';
         if(invId === 'main') return 'الرئيسي سنوي';
         return `${invName(invId)} سنوي`;
       }
 
-      // ===== Storage per inventory =====
+      // Storage per inventory
       function keysFor(invId){
         const p = `smart_${invId}_`;
         return { data:p+'data', pulled:p+'pulled', last:p+'last', undo:p+'undo' };
       }
 
-      const store = {}; // invId -> {inventory,pulledCounter,currentAccount}
+      const store = {};
       function ensureStore(invId){
         if(!store[invId]) store[invId] = { inventory: [], pulledCounter: 0, currentAccount: null };
         return store[invId];
@@ -718,10 +724,9 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         localStorage.removeItem(keysFor(invId).last);
       }
 
-      // ===== Active tab =====
+      // Active
       let activeInvId = 'main';
 
-      // ===== UI Update =====
       function setStockCounterColor(stockLen) {
         if (stockLen === 0) stockCountEl.className = "text-2xl font-extrabold text-red-400";
         else if (stockLen < 5) stockCountEl.className = "text-2xl font-extrabold text-amber-300";
@@ -746,7 +751,6 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
       }
 
       function updateTitle(){
-        // Fix: main should be "المخزون الرئيسي" (no الـ...)
         if(activeInvId === 'main') titleNameEl.textContent = 'المخزون الرئيسي';
         else titleNameEl.textContent = `مخزون ${invName(activeInvId)}`;
       }
@@ -845,7 +849,7 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         showToast(`تم التبديل إلى: ${invName(invId)}`, 'info');
       }
 
-      // ===== Parsing + Add =====
+      // Parsing + Add
       function parseStandardLine(line){
         const parts = line.split(';').map(p=>p.trim());
         if(parts.length < 2) return null;
@@ -853,7 +857,7 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         const recovery = parts[2] || 'غير متوفر';
         const url = parts[3] || '#';
         if(!email || !password) return null;
-        if(!email.includes('@')) return null; // IMPORTANT: reject non-email (header etc)
+        if(!email.includes('@')) return null;
         return { email, password, recovery, url };
       }
 
@@ -883,15 +887,13 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
 
         for(const raw of lines){
           const line = raw.trim();
-
-          // ignore common headers
           const low = line.toLowerCase();
+
           if(line.startsWith('{') || low.includes('{login}') || low.includes('login};{password') || low.includes('email;pass;') || low.includes('email;password')){
             header++; continue;
           }
 
           let acc = null;
-
           if(line.includes(';')) acc = parseStandardLine(line);
           else if(line.includes(',')) acc = parseStandardLine(line.replace(/,/g,';'));
           else acc = parseQuickLine(line);
@@ -929,7 +931,6 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         quickInputEl.value = '';
       }
 
-      // ===== Pull + Undo =====
       function pullAccount(){
         flash(pullBtn);
         const s = ensureStore(activeInvId);
@@ -982,7 +983,6 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         showToast('تم التراجع عن آخر سحب', 'success');
       }
 
-      // ===== Clear =====
       function clearStorage(){
         flash(clearBtn);
         if(!confirm(`هل أنت متأكد من حذف مخزون (${invName(activeInvId)}) بالكامل؟`)) return;
@@ -1002,7 +1002,6 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         showToast('تم تصفير المخزون', 'success');
       }
 
-      // ===== Copy =====
       async function copyField(type){
         const s = ensureStore(activeInvId);
         const acc = s.currentAccount;
@@ -1017,7 +1016,7 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         else { text = acc.recovery; label='التحقق'; }
 
         const ok = await copyText(String(text||''));
-        showToast(ok ? `تم نسخ ${label}` : 'فشل النسخ (جرّب HTTPS أو localhost)', ok ? 'copy' : 'error');
+        showToast(ok ? `تم نسخ ${label}` : 'فشل النسخ', ok ? 'copy' : 'error');
       }
 
       async function copyFullCombo(){
@@ -1099,7 +1098,6 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         showToast('تم استرجاع الحساب إلى المخزون', 'success');
       }
 
-      // ===== Move between inventories (rules-driven) =====
       function moveCurrentTo(targetInvId){
         const sFrom = ensureStore(activeInvId);
         const acc = sFrom.currentAccount;
@@ -1108,7 +1106,6 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
           return;
         }
 
-        // validate rule
         const allowed = (config.moveRules && Array.isArray(config.moveRules[activeInvId])) ? config.moveRules[activeInvId] : [];
         if(!allowed.includes(targetInvId)){
           showToast('النقل غير مسموح حسب القواعد.', 'error');
@@ -1126,7 +1123,6 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         sTo.inventory.unshift(acc);
         saveInv(targetInvId);
 
-        // remove from screen in source (real move)
         sFrom.currentAccount = null;
         clearLast(activeInvId);
         saveInv(activeInvId);
@@ -1135,7 +1131,7 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         showToast(`تم نقل الحساب إلى ${invName(targetInvId)}`, 'success');
       }
 
-      // ===== Import TXT (Ultra robust) =====
+      // ✅ قراءة ملف TXT (robust)
       function readFileAsTextUltra(file){
         return new Promise((resolve, reject) => {
           try{
@@ -1193,8 +1189,6 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
 
       async function importTxtFile(file){
         if(!file){ showToast('ما تم اختيار ملف.', 'error'); return; }
-        flash(importBtn);
-
         if(file.size === 0){ showToast('الملف فارغ.', 'error'); return; }
 
         try{
@@ -1210,45 +1204,55 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         }
       }
 
-      function exportStockToTxt(){
+      function exportStockToTxtFiltered(){
         flash(exportBtn);
         const s = ensureStore(activeInvId);
         const list = applySearch(s.inventory);
-
         if(!list.length){
           showToast('المخزون فارغ (أو لا يوجد نتيجة للبحث).', 'error');
           return;
         }
+        downloadTxt(list, `${activeInvId}_filtered_${new Date().toISOString().slice(0,10)}.txt`);
+        showToast(`تم تصدير ${list.length} حساب (حسب البحث)`, 'success');
+      }
 
+      function exportStockToTxtRemainingAll(){
+        flash(exportRemainingBtn);
+        const s = ensureStore(activeInvId);
+        const list = s.inventory;
+        if(!list.length){
+          showToast('لا يوجد متبقي للتصدير.', 'error');
+          return;
+        }
+        downloadTxt(list, `${activeInvId}_remaining_${new Date().toISOString().slice(0,10)}.txt`);
+        showToast(`تم تصدير المتبقي بالكامل: ${list.length}`, 'success');
+      }
+
+      function downloadTxt(list, filename){
         const content = list.map(acc => `${acc.email};${acc.password};${acc.recovery};${acc.url}`).join('\n');
         const blob = new Blob([content], { type:'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
-
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${activeInvId}_${new Date().toISOString().slice(0,10)}.txt`;
+        a.download = filename;
         document.body.appendChild(a);
         a.click();
         a.remove();
         URL.revokeObjectURL(url);
-
-        showToast(`تم تصدير ${list.length} حساب`, 'success');
       }
 
-      // ===== Smart panel toggle =====
       function toggleSmartPanel(){
         flash(smartStatsBtn);
         smartPanel.classList.toggle('hidden');
         updateSmartSummary();
       }
 
-      // ===== Settings: Links =====
+      // Links UI
       function renderHomeLinks(){
         const links = config.links || [];
         homeLinksEl.innerHTML = '';
         if(!links.length){ homeLinksEl.classList.add('hidden'); return; }
         homeLinksEl.classList.remove('hidden');
-
         links.forEach(l=>{
           const a = document.createElement('a');
           a.href = l.url;
@@ -1326,7 +1330,7 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         showToast('تم حفظ الحد', 'success');
       }
 
-      // ===== Settings: Inventories =====
+      // Inventories UI
       function slugifyId(name){
         const base = (name||'').toLowerCase().trim()
           .replace(/[\u0600-\u06FF]/g, '')
@@ -1376,9 +1380,6 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
 
         config.inventories.push({ id, name, locked:false });
 
-        // Default rule for new inventory:
-        // you asked: any inventory added should follow same copy format.
-        // For move rules, we make it able to move to "go" if exists, else to main.
         const hasGo = config.inventories.some(x=>x.id==='go');
         config.moveRules[id] = hasGo ? ['go'] : ['main'];
 
@@ -1396,15 +1397,12 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         if(!inv || inv.locked) return;
         if(!confirm(`حذف مخزون (${invName(invId)})؟ سيتم حذف بياناته أيضاً.`)) return;
 
-        // remove from config
         config.inventories = config.inventories.filter(x=>x.id!==invId);
-        // remove from rules
         for(const k in (config.moveRules||{})){
           config.moveRules[k] = (config.moveRules[k]||[]).filter(x=>x!==invId);
         }
         delete config.moveRules[invId];
 
-        // remove local storage
         const k = keysFor(invId);
         localStorage.removeItem(k.data);
         localStorage.removeItem(k.pulled);
@@ -1429,14 +1427,10 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         showToast('تمت إعادة قواعد النقل', 'success');
       }
 
-      // ===== Settings: UI toggles =====
       function applyUiToggles(){
         document.getElementById('snowCanvas').style.display = config.ui.snow ? '' : 'none';
         smartStatsBtn.style.display = config.ui.smart ? '' : 'none';
         if(!config.ui.smart) smartPanel.classList.add('hidden');
-        document.querySelector('section.glass-panel.soft.p-4.rounded-3xl.shadow-xl')?.style.setProperty('display', config.ui.smart ? '' : 'none');
-        // feed panel: hide inputs section by hiding entire section if off
-        // (keep safe if query changes)
         const feedSection = inputSectionEl?.closest('section');
         if(feedSection) feedSection.style.display = config.ui.feed ? '' : 'none';
       }
@@ -1456,7 +1450,6 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         flash(resetAllBtn);
         if(!confirm('تصفير كل شيء؟ (كل المخزونات + الإعدادات)')) return;
 
-        // wipe inventory storages for all invs (current config list + default list)
         const ids = new Set([...(config.inventories||[]).map(x=>x.id), ...(defaultConfig.inventories||[]).map(x=>x.id)]);
         ids.forEach(id=>{
           const k = keysFor(id);
@@ -1470,8 +1463,6 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
 
         config = loadConfig();
         activeInvId = 'main';
-
-        // reset store cache
         for(const k in store) delete store[k];
 
         loadAllInventories();
@@ -1482,7 +1473,7 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         showToast('تم التصفير الكامل', 'success');
       }
 
-      // ===== Settings modal open/close =====
+      // Settings modal
       function openSettings(){
         flash(settingsBtn);
         renderSettings();
@@ -1499,13 +1490,12 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         renderInvList();
         renderLinksList();
         maxLinksInput.value = String(config.maxLinks ?? 5);
-
         toggleSnow.checked = !!config.ui.snow;
         toggleSmart.checked = !!config.ui.smart;
         toggleFeed.checked = !!config.ui.feed;
       }
 
-      // ===== Events =====
+      // Events
       toggleBtn.addEventListener('click', () => { flash(toggleBtn); inputSectionEl.classList.toggle('hidden'); });
       clearBtn.addEventListener('click', clearStorage);
       addBtn.addEventListener('click', addToStock);
@@ -1532,16 +1522,17 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         moveTargetsEl.classList.toggle('hidden');
       });
 
-      importBtn.addEventListener('click', () => { flash(importBtn); setTimeout(()=>importFile.click(), 0); });
+      // ✅ FIX: لا click ولا setTimeout — مجرد change على input (الفتح صار من label)
       importFile.addEventListener('change', async () => {
         const file = importFile.files && importFile.files[0] ? importFile.files[0] : null;
         await importTxtFile(file);
         importFile.value = '';
       });
 
-      exportBtn.addEventListener('click', exportStockToTxt);
+      exportBtn.addEventListener('click', exportStockToTxtFiltered);
+      exportRemainingBtn.addEventListener('click', exportStockToTxtRemainingAll);
 
-      // Settings events
+      // Settings
       settingsBtn.addEventListener('click', openSettings);
       closeSettingsBtn.addEventListener('click', closeSettings);
       settingsModal.addEventListener('click', (e)=>{ if(e.target === settingsModal) closeSettings(); });
@@ -1555,7 +1546,6 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
       saveSettingsBtn.addEventListener('click', saveUiSettings);
       resetAllBtn.addEventListener('click', resetAll);
 
-      // ===== Init =====
       function loadAllInventories(){
         for(const inv of config.inventories){
           loadInv(inv.id);
@@ -1570,7 +1560,7 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         setActive('main');
       });
 
-      // ===== Snow (خفيف وشفاف وسريع) =====
+      // Snow
       const canvas = document.getElementById('snowCanvas');
       const ctx = canvas.getContext('2d', { alpha: true });
       let W = 0, H = 0;
@@ -1600,11 +1590,9 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         for(const f of flakes){
           f.y += f.v;
           f.x += f.drift;
-
           if (f.y > H + 5) { f.y = -5; f.x = Math.random()*W; }
           if (f.x > W + 5) f.x = -5;
           if (f.x < -5) f.x = W + 5;
-
           ctx.beginPath();
           ctx.arc(f.x, f.y, f.r, 0, Math.PI*2);
           ctx.closePath();
