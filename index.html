@@ -78,6 +78,7 @@
     .tab-pill{
       border: 1px solid rgba(148,163,184,.18);
       background: rgba(2,6,23,.45);
+      white-space: nowrap;
     }
     .tab-active{
       border-color: rgba(59,130,246,.45);
@@ -93,6 +94,19 @@
       z-index: 5;
       opacity: .55; /* خفيف */
     }
+
+    /* Modal */
+    .modal-backdrop{
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.55);
+      z-index: 60;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-backdrop.show{ display:flex; }
   </style>
 </head>
 
@@ -114,13 +128,18 @@
     </div>
 
     <div class="flex gap-3 w-full md:w-auto items-center">
-      <!-- تبويبات: الأساسي / Gemini -->
-      <div class="flex gap-2">
-        <button id="tabMain" class="press-glow soft tab-pill tab-active px-4 py-2 rounded-2xl text-sm font-bold text-slate-100">
-          <i class="fa-solid fa-layer-group ml-2 text-blue-300"></i> الأساسي
+      <!-- تبويبات ديناميكية + زر + + إعدادات -->
+      <div class="flex gap-2 items-center flex-wrap">
+        <div id="tabsWrap" class="flex gap-2 flex-wrap"></div>
+
+        <button id="addInvBtn" title="إضافة مخزون جديد"
+          class="press-glow soft tab-pill px-4 py-2 rounded-2xl text-sm font-black text-slate-100">
+          <i class="fa-solid fa-plus ml-2 text-emerald-300"></i> +
         </button>
-        <button id="tabGemini" class="press-glow soft tab-pill px-4 py-2 rounded-2xl text-sm font-bold text-slate-100">
-          <i class="fa-solid fa-wand-magic-sparkles ml-2 text-purple-300"></i> Gemini
+
+        <button id="settingsBtn" title="إعدادات"
+          class="press-glow soft tab-pill px-4 py-2 rounded-2xl text-sm font-bold text-slate-100">
+          <i class="fa-solid fa-gear ml-2 text-slate-300"></i> الإعدادات
         </button>
       </div>
 
@@ -136,6 +155,37 @@
   </header>
 
   <main class="w-full max-w-5xl space-y-6 relative z-10">
+
+    <!-- روابط سريعة (جديد) -->
+    <section class="glass-panel soft p-5 rounded-3xl shadow-xl">
+      <div class="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-link text-sky-300"></i>
+          <span class="font-extrabold text-white">روابط سريعة</span>
+          <span class="text-xs glow-text">تظهر بالرئيسية + فتح مباشر + نسخ</span>
+        </div>
+
+        <div class="flex gap-2">
+          <button id="addLinkBtn"
+            class="press-glow soft bg-sky-700/30 hover:bg-sky-700/40 border border-sky-700/35 text-sky-100 font-bold px-5 py-3 rounded-2xl flex items-center gap-2">
+            <i class="fa-solid fa-plus text-sky-200"></i>
+            <span>إضافة رابط</span>
+          </button>
+
+          <button id="clearLinksBtn"
+            class="press-glow soft bg-slate-800/55 hover:bg-slate-700/60 border border-slate-700/60 text-white font-bold px-5 py-3 rounded-2xl flex items-center gap-2">
+            <i class="fa-solid fa-broom text-slate-200"></i>
+            <span>مسح الروابط</span>
+          </button>
+        </div>
+      </div>
+
+      <div id="linksWrap" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+
+      <p class="text-[11px] glow-text mt-3">
+        ✳️ اضغط على اسم الرابط حتى يفتح، أو استخدم زر النسخ لنسخ الرابط.
+      </p>
+    </section>
 
     <!-- أدوات ذكية سريعة -->
     <section class="glass-panel soft p-5 rounded-3xl shadow-xl">
@@ -336,7 +386,7 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
                 <span>حذف من الشاشة</span>
               </button>
 
-              <!-- زر نقل للمخزون الثاني -->
+              <!-- زر نقل للمخزون الثاني (يبقى مثل ما هو) -->
               <button id="moveToGeminiBtn"
                 class="press-glow soft bg-purple-700/25 hover:bg-purple-700/35 border border-purple-700/35 text-purple-100 font-bold py-3 rounded-2xl flex items-center justify-center gap-2">
                 <i class="fa-solid fa-right-left text-purple-300"></i>
@@ -362,6 +412,31 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
     <span id="toastMsg">تم العملية بنجاح</span>
   </div>
 
+  <!-- Settings Modal (جديد) -->
+  <div id="settingsModal" class="modal-backdrop">
+    <div class="glass-panel soft w-full max-w-2xl rounded-3xl p-5 border border-slate-700/50 shadow-2xl">
+      <div class="flex justify-between items-center mb-3">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-gear text-slate-300"></i>
+          <span class="font-extrabold text-white">إعدادات المخزون</span>
+          <span class="text-xs glow-text">حذف مخزون من التخزين</span>
+        </div>
+        <button id="closeSettingsBtn" class="press-glow soft tab-pill px-4 py-2 rounded-2xl text-sm font-bold">
+          إغلاق
+        </button>
+      </div>
+
+      <div class="bg-slate-950/20 border border-slate-700/40 rounded-2xl p-4">
+        <div class="text-sm text-slate-200 font-bold mb-2">📦 المخازن الحالية</div>
+        <div id="invListWrap" class="space-y-2"></div>
+
+        <p class="text-[11px] glow-text mt-3">
+          ⚠️ حذف المخزون يعني حذف بياناته من localStorage (الإيميلات الخاصة به)، ولا يؤثر على المخازن الأخرى.
+        </p>
+      </div>
+    </div>
+  </div>
+
   <script>
     (function () {
       // DOM
@@ -370,8 +445,13 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
 
       const titleNameEl = document.getElementById('titleName');
 
-      const tabMain = document.getElementById('tabMain');
-      const tabGemini = document.getElementById('tabGemini');
+      const tabsWrap = document.getElementById('tabsWrap');
+      const addInvBtn = document.getElementById('addInvBtn');
+      const settingsBtn = document.getElementById('settingsBtn');
+
+      const settingsModal = document.getElementById('settingsModal');
+      const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+      const invListWrap = document.getElementById('invListWrap');
 
       const inputSectionEl = document.getElementById('inputSection');
       const bulkInputEl = document.getElementById('bulkInput');
@@ -407,26 +487,38 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
       const importFile = document.getElementById('importFile');
       const exportBtn = document.getElementById('exportBtn');
 
+      // Links (جديد)
+      const addLinkBtn = document.getElementById('addLinkBtn');
+      const clearLinksBtn = document.getElementById('clearLinksBtn');
+      const linksWrap = document.getElementById('linksWrap');
+
       const toast = document.getElementById('toast');
       const toastMsg = document.getElementById('toastMsg');
       const toastIcon = document.getElementById('toastIcon');
       let toastTimeout;
 
-      // Tabs / State
-      const TABS = { MAIN: 'main', GEMINI: 'gemini' };
-      let activeTab = TABS.MAIN;
+      // ==========================
+      // Inventories (ديناميكي) — مع حفظ القديم
+      // ==========================
+      const META_KEY = 'smartInv_inventories_meta_v1';
+      const ACTIVE_KEY = 'smartInv_activeInventory_v1';
 
-      // Storage Keys (مخزونين منفصلين)
-      const STORAGE_KEYS = {
-        main:   { data:'smartInventory_data',   pulled:'smartInventory_pulled',   last:'smartInventory_lastPulled',   undo:'smartInventory_undo' },
-        gemini: { data:'smartGemini_data',      pulled:'smartGemini_pulled',      last:'smartGemini_lastPulled',      undo:'smartGemini_undo' }
+      // Legacy keys (لا نلمسها حتى ما ينحذف القديم)
+      const LEGACY_KEYS = {
+        main:   { data:'smartInventory_data', pulled:'smartInventory_pulled', last:'smartInventory_lastPulled', undo:'smartInventory_undo' },
+        gemini: { data:'smartGemini_data',    pulled:'smartGemini_pulled',   last:'smartGemini_lastPulled',   undo:'smartGemini_undo' }
       };
 
-      // Data for both tabs
-      let store = {
-        main:   { inventory: [], pulledCounter: 0, currentAccount: null },
-        gemini: { inventory: [], pulledCounter: 0, currentAccount: null }
-      };
+      // Meta: [{id,name,type:'legacy-main'|'legacy-gemini'|'custom'}]
+      let inventoriesMeta = [];
+      let activeInvId = 'main';
+
+      // Data store per inventory id
+      let store = {};
+
+      // Links storage (global)
+      const LINKS_KEY = 'smartInv_quickLinks_v1';
+      let quickLinks = [];
 
       // Utils
       function safeJsonParse(value, fallback) { try { return JSON.parse(value); } catch { return fallback; } }
@@ -489,9 +581,42 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         }
       }
 
-      // Active data getters
-      function K(){ return STORAGE_KEYS[activeTab]; }
-      function S(){ return store[activeTab]; }
+      function normalizeUrl(u){
+        const url = String(u || '').trim();
+        if(!url) return '';
+        // إذا المستخدم كتب بدون http
+        if (!/^https?:\/\//i.test(url)) return 'https://' + url;
+        return url;
+      }
+
+      // ==========================
+      // Keys per inventory
+      // ==========================
+      function getInvMetaById(id){ return inventoriesMeta.find(x => x.id === id) || null; }
+
+      function keysFor(id){
+        const meta = getInvMetaById(id);
+        if (!meta) return LEGACY_KEYS.main;
+
+        if (meta.type === 'legacy-main') return LEGACY_KEYS.main;
+        if (meta.type === 'legacy-gemini') return LEGACY_KEYS.gemini;
+
+        // custom
+        const p = `smartInv_${meta.id}`;
+        return {
+          data:   `${p}_data`,
+          pulled: `${p}_pulled`,
+          last:   `${p}_lastPulled`,
+          undo:   `${p}_undo`
+        };
+      }
+
+      // Active getters
+      function K(){ return keysFor(activeInvId); }
+      function S(){
+        if(!store[activeInvId]) store[activeInvId] = { inventory: [], pulledCounter: 0, currentAccount: null };
+        return store[activeInvId];
+      }
 
       function saveActive() {
         const keys = K();
@@ -508,29 +633,241 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         const s = S();
         s.inventory = data ? safeJsonParse(data, []) : [];
         s.pulledCounter = pulled ? Number(pulled) || 0 : 0;
+
+        // current account من last
+        const last = localStorage.getItem(keys.last);
+        s.currentAccount = last ? safeJsonParse(last, null) : null;
       }
 
-      function getLastPulled(tab) {
-        const keys = STORAGE_KEYS[tab];
+      function getLastPulled(id) {
+        const keys = keysFor(id);
         const last = localStorage.getItem(keys.last);
         return last ? safeJsonParse(last, null) : null;
       }
 
-      function clearLastPulled(tab) {
-        const keys = STORAGE_KEYS[tab];
+      function clearLastPulled(id) {
+        const keys = keysFor(id);
         localStorage.removeItem(keys.last);
       }
 
-      function setUndo(tab, obj){
-        const keys = STORAGE_KEYS[tab];
+      function setUndo(id, obj){
+        const keys = keysFor(id);
         localStorage.setItem(keys.undo, JSON.stringify(obj || null));
       }
-      function getUndo(tab){
-        const keys = STORAGE_KEYS[tab];
+      function getUndo(id){
+        const keys = keysFor(id);
         const v = localStorage.getItem(keys.undo);
         return v ? safeJsonParse(v, null) : null;
       }
 
+      // ==========================
+      // Meta init / migration
+      // ==========================
+      function ensureMeta(){
+        const raw = localStorage.getItem(META_KEY);
+        if (raw) {
+          inventoriesMeta = safeJsonParse(raw, []);
+        }
+
+        // إذا أول مرة أو فاضي
+        if (!Array.isArray(inventoriesMeta) || inventoriesMeta.length === 0) {
+          inventoriesMeta = [
+            { id:'main',   name:'الأساسي', type:'legacy-main' },
+            { id:'gemini', name:'Gemini',  type:'legacy-gemini' }
+          ];
+          localStorage.setItem(META_KEY, JSON.stringify(inventoriesMeta));
+        } else {
+          // تأكد أن الرئيسي والجيميني موجودين (لو أحد حذفهم من meta بالغلط)
+          const hasMain = inventoriesMeta.some(x => x.id === 'main');
+          const hasGem  = inventoriesMeta.some(x => x.id === 'gemini');
+          if (!hasMain) inventoriesMeta.unshift({ id:'main', name:'الأساسي', type:'legacy-main' });
+          if (!hasGem)  inventoriesMeta.push({ id:'gemini', name:'Gemini', type:'legacy-gemini' });
+          localStorage.setItem(META_KEY, JSON.stringify(inventoriesMeta));
+        }
+
+        const savedActive = localStorage.getItem(ACTIVE_KEY);
+        if (savedActive && inventoriesMeta.some(x => x.id === savedActive)) {
+          activeInvId = savedActive;
+        } else {
+          activeInvId = 'main';
+          localStorage.setItem(ACTIVE_KEY, activeInvId);
+        }
+
+        // جهّز store لكل المخازن
+        inventoriesMeta.forEach(m => {
+          if (!store[m.id]) store[m.id] = { inventory: [], pulledCounter: 0, currentAccount: null };
+        });
+      }
+
+      function setActiveInventory(id){
+        if (!inventoriesMeta.some(x => x.id === id)) return;
+
+        activeInvId = id;
+        localStorage.setItem(ACTIVE_KEY, id);
+
+        // Load & UI
+        loadActive();
+        updateHeaderTitle();
+        buildTabs();
+        updateUI();
+        showToast(`تم التبديل إلى: ${getInvMetaById(id)?.name || id}`, 'info');
+
+        // زر النقل يبقى يظهر فقط في "الأساسي"
+        moveToGeminiBtn.style.display = (activeInvId === 'main') ? '' : 'none';
+      }
+
+      function updateHeaderTitle(){
+        const meta = getInvMetaById(activeInvId);
+        const name = meta ? meta.name : 'المخزون';
+        titleNameEl.textContent = `المخزون الذكي — ${name}`;
+      }
+
+      function buildTabs(){
+        tabsWrap.innerHTML = '';
+
+        for (const inv of inventoriesMeta) {
+          const btn = document.createElement('button');
+          btn.className = "press-glow soft tab-pill px-4 py-2 rounded-2xl text-sm font-bold text-slate-100";
+          if (inv.id === activeInvId) btn.classList.add('tab-active');
+
+          // أيقونات بسيطة
+          let icon = 'fa-layer-group';
+          let iconColor = 'text-blue-300';
+          if (inv.id === 'gemini') { icon = 'fa-wand-magic-sparkles'; iconColor = 'text-purple-300'; }
+          if (inv.id !== 'main' && inv.id !== 'gemini') { icon = 'fa-box'; iconColor = 'text-emerald-300'; }
+
+          btn.innerHTML = `<i class="fa-solid ${icon} ml-2 ${iconColor}"></i>${inv.name}`;
+          btn.addEventListener('click', () => setActiveInventory(inv.id));
+          tabsWrap.appendChild(btn);
+        }
+      }
+
+      function createNewInventory(){
+        flash(addInvBtn);
+
+        const name = prompt('اكتب اسم المخزون الجديد:');
+        if (!name || !String(name).trim()) {
+          showToast('تم الإلغاء (اسم المخزون فارغ).', 'error');
+          return;
+        }
+
+        // منع تكرار الاسم (اختياري)
+        const n = String(name).trim();
+        if (inventoriesMeta.some(x => x.name === n)) {
+          showToast('هذا الاسم موجود بالفعل. اختر اسم مختلف.', 'error');
+          return;
+        }
+
+        const id = 'inv_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,7);
+        inventoriesMeta.push({ id, name: n, type:'custom' });
+        localStorage.setItem(META_KEY, JSON.stringify(inventoriesMeta));
+
+        // جهّز store
+        store[id] = { inventory: [], pulledCounter: 0, currentAccount: null };
+
+        buildTabs();
+        setActiveInventory(id);
+        showToast('تم إنشاء مخزون جديد ✅', 'success');
+      }
+
+      function openSettings(){
+        flash(settingsBtn);
+        renderSettingsInventories();
+        settingsModal.classList.add('show');
+      }
+      function closeSettings(){
+        settingsModal.classList.remove('show');
+      }
+
+      function deleteInventory(invId){
+        const meta = getInvMetaById(invId);
+        if (!meta) return;
+
+        // تأكيد قوي
+        if (!confirm(`هل تريد حذف مخزون: (${meta.name}) من التخزين؟\nهذا سيحذف الإيميلات والعدادات الخاصة به فقط.`)) return;
+
+        // احذف keys
+        const keys = keysFor(invId);
+        localStorage.removeItem(keys.data);
+        localStorage.removeItem(keys.pulled);
+        localStorage.removeItem(keys.last);
+        localStorage.removeItem(keys.undo);
+
+        // إذا legacy main/gemini: نسمح بالحذف من التخزين أيضاً (حسب طلبك)
+        // لكن نبقي meta موجود؟ المستخدم يريد "حذف المخزون من الإعدادات" يعني إزالة التبويب أيضاً.
+        inventoriesMeta = inventoriesMeta.filter(x => x.id !== invId);
+
+        // لا نخلي meta فاضية
+        if (inventoriesMeta.length === 0) {
+          inventoriesMeta = [
+            { id:'main',   name:'الأساسي', type:'legacy-main' },
+            { id:'gemini', name:'Gemini',  type:'legacy-gemini' }
+          ];
+        } else {
+          // ضمان بقاء واحد على الأقل
+          if (!inventoriesMeta.some(x => x.id === 'main')) {
+            inventoriesMeta.unshift({ id:'main', name:'الأساسي', type:'legacy-main' });
+          }
+          if (!inventoriesMeta.some(x => x.id === 'gemini')) {
+            inventoriesMeta.push({ id:'gemini', name:'Gemini', type:'legacy-gemini' });
+          }
+        }
+
+        localStorage.setItem(META_KEY, JSON.stringify(inventoriesMeta));
+
+        // إذا حذفنا التبويب الحالي
+        if (activeInvId === invId) {
+          activeInvId = inventoriesMeta[0].id;
+          localStorage.setItem(ACTIVE_KEY, activeInvId);
+        }
+
+        // نظّف store
+        delete store[invId];
+
+        buildTabs();
+        setActiveInventory(activeInvId);
+        renderSettingsInventories();
+        showToast('تم حذف المخزون ✅', 'success');
+      }
+
+      function renderSettingsInventories(){
+        invListWrap.innerHTML = '';
+
+        for (const inv of inventoriesMeta) {
+          const row = document.createElement('div');
+          row.className = "flex flex-col md:flex-row gap-2 md:items-center md:justify-between bg-slate-950/25 border border-slate-700/40 rounded-2xl p-3";
+
+          const left = document.createElement('div');
+          left.className = "text-sm text-slate-100";
+          left.innerHTML =
+            `<div class="font-extrabold">${inv.name}</div>
+             <div class="text-xs glow-text">ID: ${inv.id}</div>`;
+
+          const right = document.createElement('div');
+          right.className = "flex gap-2";
+
+          const switchBtn = document.createElement('button');
+          switchBtn.className = "press-glow soft bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/60 text-white font-bold px-4 py-2 rounded-2xl text-sm";
+          switchBtn.innerHTML = `<i class="fa-solid fa-arrow-right-arrow-left ml-2 text-slate-200"></i>فتح`;
+          switchBtn.addEventListener('click', () => { setActiveInventory(inv.id); closeSettings(); });
+
+          const delBtn = document.createElement('button');
+          delBtn.className = "press-glow soft bg-red-700/20 hover:bg-red-700/28 border border-red-700/30 text-red-100 font-bold px-4 py-2 rounded-2xl text-sm";
+          delBtn.innerHTML = `<i class="fa-solid fa-trash ml-2 text-red-300"></i>حذف`;
+          delBtn.addEventListener('click', () => deleteInventory(inv.id));
+
+          right.appendChild(switchBtn);
+          right.appendChild(delBtn);
+
+          row.appendChild(left);
+          row.appendChild(right);
+          invListWrap.appendChild(row);
+        }
+      }
+
+      // ==========================
+      // UI helpers
+      // ==========================
       function setStockCounterColor(stockLen) {
         if (stockLen === 0) stockCountEl.className = "text-2xl font-extrabold text-red-400";
         else if (stockLen < 5) stockCountEl.className = "text-2xl font-extrabold text-amber-300";
@@ -545,7 +882,7 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         setStockCounterColor(filtered.length);
 
         // إذا في حساب محفوظ آخر مرة
-        const last = s.currentAccount || getLastPulled(activeTab);
+        const last = s.currentAccount || getLastPulled(activeInvId);
         if (last) {
           s.currentAccount = last;
           displayResult(last);
@@ -589,7 +926,7 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         return { ok: true, acc: { email, password, recovery: "غير متوفر", url: "#" } };
       }
 
-      // Search filter (ذكي وسريع)
+      // Search filter
       function applySearch(list){
         const q = (searchInputEl.value || '').trim().toLowerCase();
         if (!q) return list;
@@ -656,7 +993,8 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         bulkInputEl.value = '';
         quickInputEl.value = '';
 
-        let msg = `(${activeTab === TABS.MAIN ? 'الأساسي' : 'Gemini'}) تمت إضافة ${addedCount} حساب.`;
+        const tabName = getInvMetaById(activeInvId)?.name || 'المخزون';
+        let msg = `(${tabName}) تمت إضافة ${addedCount} حساب.`;
         if (duplicateCount) msg += ` (مكرر: ${duplicateCount})`;
         if (invalidCount) msg += ` (غير صالح: ${invalidCount})`;
 
@@ -686,7 +1024,7 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         s.pulledCounter++;
 
         // Undo info
-        setUndo(activeTab, { acc, idx, time: Date.now() });
+        setUndo(activeInvId, { acc, idx, time: Date.now() });
 
         saveActive();
         displayResult(acc);
@@ -696,7 +1034,8 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
 
       function clearStorage() {
         flash(clearBtn);
-        if (!confirm(`هل أنت متأكد من حذف مخزون (${activeTab === TABS.MAIN ? 'الأساسي' : 'Gemini'}) بالكامل؟`)) return;
+        const tabName = getInvMetaById(activeInvId)?.name || 'المخزون';
+        if (!confirm(`هل أنت متأكد من حذف مخزون (${tabName}) بالكامل؟`)) return;
 
         const s = S();
         s.inventory = [];
@@ -715,7 +1054,7 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
 
       async function copyField(type) {
         const s = S();
-        const acc = s.currentAccount || getLastPulled(activeTab);
+        const acc = s.currentAccount || getLastPulled(activeInvId);
         if (!acc) {
           showToast('لا يوجد حساب مسحوب للنسخ.', 'error');
           return;
@@ -734,7 +1073,7 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
       async function copyFullCombo() {
         flash(copyFullBtn);
         const s = S();
-        const acc = s.currentAccount || getLastPulled(activeTab);
+        const acc = s.currentAccount || getLastPulled(activeInvId);
         if (!acc) {
           showToast('لا يوجد حساب مسحوب لنسخ المعلومات.', 'error');
           return;
@@ -753,12 +1092,11 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
       async function copyCompact() {
         flash(copyCompactBtn);
         const s = S();
-        const acc = s.currentAccount || getLastPulled(activeTab);
+        const acc = s.currentAccount || getLastPulled(activeInvId);
         if (!acc) {
           showToast('لا يوجد حساب مسحوب.', 'error');
           return;
         }
-        // سطر واحد (مفيد للّصق السريع)
         const line = `${acc.email};${acc.password};${acc.recovery || 'غير متوفر'};${acc.url || '#'}`;
         const ok = await copyText(line);
         showToast(ok ? 'تم نسخ آخر حساب (سطر واحد)' : 'فشل النسخ', ok ? 'copy' : 'error');
@@ -767,11 +1105,11 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
       function deleteLastPulled() {
         flash(deleteLastBtn);
         const s = S();
-        const acc = s.currentAccount || getLastPulled(activeTab);
+        const acc = s.currentAccount || getLastPulled(activeInvId);
         if (!acc) { showToast('لا يوجد حساب مسحوب.', 'error'); return; }
 
         s.currentAccount = null;
-        clearLastPulled(activeTab);
+        clearLastPulled(activeInvId);
         saveActive();
         resultAreaEl.classList.add('hidden');
         showToast('تم حذف الحساب من الشاشة', 'success');
@@ -780,17 +1118,16 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
       function restoreLastPulled() {
         flash(restoreBtn);
         const s = S();
-        const acc = s.currentAccount || getLastPulled(activeTab);
+        const acc = s.currentAccount || getLastPulled(activeInvId);
         if (!acc) { showToast('لا يوجد حساب مسحوب للاسترجاع.', 'error'); return; }
 
-        // يرجع أول المخزون
         if (!s.inventory.some(a => a.email === acc.email)) {
           s.inventory.unshift(acc);
         }
 
         if (s.pulledCounter > 0) s.pulledCounter--;
         s.currentAccount = null;
-        clearLastPulled(activeTab);
+        clearLastPulled(activeInvId);
 
         saveActive();
         updateUI();
@@ -800,60 +1137,71 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
       function moveToGemini() {
         flash(moveToGeminiBtn);
 
-        // النقل مطلوب من المخزون الأول إلى الثاني
-        if (activeTab !== TABS.MAIN) {
+        // يبقى مثل ما هو: من الأساسي إلى Gemini فقط
+        if (activeInvId !== 'main') {
           showToast('زر النقل يعمل من (الأساسي) إلى (Gemini).', 'error');
           return;
         }
 
-        const sMain = store.main;
-        const acc = sMain.currentAccount || getLastPulled(TABS.MAIN);
+        const sMain = store['main'] || S();
+        const acc = sMain.currentAccount || getLastPulled('main');
         if (!acc) { showToast('لا يوجد حساب مسحوب للنقل.', 'error'); return; }
 
-        const sGem = store.gemini;
+        // جهّز Gemini
+        if (!store['gemini']) store['gemini'] = { inventory: [], pulledCounter: 0, currentAccount: null };
+        // حمّل Gemini (حتى لو مو active)
+        const prevActive = activeInvId;
+        activeInvId = 'gemini';
+        loadActive();
+        const sGem = store['gemini'];
 
-        // منع تكرار بالإيميل
         if (sGem.inventory.some(a => a.email === acc.email)) {
+          activeInvId = prevActive;
           showToast('هذا الحساب موجود بالفعل في مخزون Gemini (تم منع التكرار).', 'error');
           return;
         }
 
-        // أضفه إلى Gemini (أول المخزون)
         sGem.inventory.unshift(acc);
-
         // احفظ Gemini
-        localStorage.setItem(STORAGE_KEYS.gemini.data, JSON.stringify(sGem.inventory));
+        activeInvId = 'gemini';
+        saveActive();
 
-        // احذف من شاشة الأساسي (حتى يصير "نقل" فعلي)
+        // رجّع active
+        activeInvId = prevActive;
+
+        // احذف من شاشة الأساسي
         sMain.currentAccount = null;
-        clearLastPulled(TABS.MAIN);
-        localStorage.setItem(STORAGE_KEYS.main.data, JSON.stringify(sMain.inventory));
-        localStorage.setItem(STORAGE_KEYS.main.pulled, String(sMain.pulledCounter));
+        clearLastPulled('main');
 
+        // حفظ الأساسي
+        activeInvId = 'main';
+        saveActive();
+
+        // رجع تبويب المستخدم الحالي
+        activeInvId = prevActive;
         updateUI();
+
         showToast('تم نقل الحساب إلى مخزون Gemini', 'success');
       }
 
       function undoLastPull() {
         flash(undoPullBtn);
-        const undo = getUndo(activeTab);
+        const undo = getUndo(activeInvId);
         if (!undo || !undo.acc) {
           showToast('لا يوجد عملية سحب للتراجع عنها.', 'error');
           return;
         }
 
         const s = S();
-        // رجع الحساب لمكانه إن أمكن، وإلا بداية المخزون
         const idx = Number.isFinite(undo.idx) ? Math.max(0, Math.min(undo.idx, s.inventory.length)) : 0;
         if (!s.inventory.some(a => a.email === undo.acc.email)) {
           s.inventory.splice(idx, 0, undo.acc);
         }
         if (s.pulledCounter > 0) s.pulledCounter--;
 
-        // امسح الشاشة والـ last
         s.currentAccount = null;
-        clearLastPulled(activeTab);
-        setUndo(activeTab, null);
+        clearLastPulled(activeInvId);
+        setUndo(activeInvId, null);
 
         saveActive();
         updateUI();
@@ -900,9 +1248,12 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
 
+        const meta = getInvMetaById(activeInvId);
+        const safeName = (meta?.name || 'inventory').replace(/[^\w\u0600-\u06FF]+/g,'_');
+
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${activeTab === TABS.MAIN ? 'inventory' : 'gemini'}_${new Date().toISOString().slice(0,10)}.txt`;
+        a.download = `${safeName}_${new Date().toISOString().slice(0,10)}.txt`;
         document.body.appendChild(a);
         a.click();
         a.remove();
@@ -914,9 +1265,8 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
       function updateSmartSummary(){
         const s = S();
         const list = applySearch(s.inventory);
-        const last = s.currentAccount || getLastPulled(activeTab);
+        const last = s.currentAccount || getLastPulled(activeInvId);
 
-        // تقدير سريع "قوة كلمة المرور" (بس للعرض)
         function strength(p){
           if(!p) return 'غير معروف';
           let score = 0;
@@ -929,7 +1279,7 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
           return 'قوي';
         }
 
-        const tabName = activeTab === TABS.MAIN ? 'الأساسي' : 'Gemini';
+        const tabName = getInvMetaById(activeInvId)?.name || 'المخزون';
         const now = new Date().toLocaleDateString('ar-IQ');
 
         smartSummary.textContent =
@@ -944,27 +1294,106 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         updateSmartSummary();
       }
 
-      function setActiveTab(tab){
-        activeTab = tab;
+      // ==========================
+      // Quick Links (جديد)
+      // ==========================
+      function loadLinks(){
+        const raw = localStorage.getItem(LINKS_KEY);
+        quickLinks = raw ? safeJsonParse(raw, []) : [];
+        if (!Array.isArray(quickLinks)) quickLinks = [];
+      }
+      function saveLinks(){
+        localStorage.setItem(LINKS_KEY, JSON.stringify(quickLinks));
+      }
 
-        // UI
-        tabMain.classList.toggle('tab-active', tab === TABS.MAIN);
-        tabGemini.classList.toggle('tab-active', tab === TABS.GEMINI);
+      function renderLinks(){
+        linksWrap.innerHTML = '';
 
-        titleNameEl.textContent = tab === TABS.MAIN ? 'المخزون الذكي' : 'المخزون الذكي — Gemini';
+        if (!quickLinks.length) {
+          linksWrap.innerHTML = `
+            <div class="bg-slate-950/20 border border-slate-700/40 rounded-2xl p-4 text-sm text-slate-200">
+              لا يوجد روابط حالياً. اضغط <span class="font-bold text-sky-200">إضافة رابط</span> لإضافة أول رابط.
+            </div>
+          `;
+          return;
+        }
 
-        // زر النقل يظهر فقط في الأساسي
-        moveToGeminiBtn.style.display = (tab === TABS.MAIN) ? '' : 'none';
+        for (const item of quickLinks) {
+          const card = document.createElement('div');
+          card.className = "bg-slate-950/20 border border-slate-700/40 rounded-2xl p-4 flex items-start justify-between gap-3";
 
-        // load & show
-        loadActive();
+          const left = document.createElement('div');
+          left.className = "min-w-0";
+          left.innerHTML = `
+            <div class="font-extrabold text-white truncate cursor-pointer hover:underline" title="فتح الرابط">${item.name || 'رابط'}</div>
+            <div class="text-xs glow-text mt-1 break-all">${item.url || ''}</div>
+          `;
 
-        const s = S();
-        const last = getLastPulled(activeTab);
-        if (last) s.currentAccount = last;
+          left.querySelector('div.font-extrabold').addEventListener('click', () => {
+            const u = item.url || '';
+            if(!u) return;
+            window.open(u, '_blank', 'noopener');
+          });
 
-        updateUI();
-        showToast(`تم التبديل إلى: ${tab === TABS.MAIN ? 'الأساسي' : 'Gemini'}`, 'info');
+          const right = document.createElement('div');
+          right.className = "flex gap-2 flex-shrink-0";
+
+          const copyBtn = document.createElement('button');
+          copyBtn.className = "press-glow soft bg-blue-700/20 hover:bg-blue-700/28 border border-blue-700/30 text-blue-100 font-bold px-3 py-2 rounded-2xl text-sm";
+          copyBtn.innerHTML = `<i class="fa-solid fa-copy"></i>`;
+          copyBtn.title = 'نسخ الرابط';
+          copyBtn.addEventListener('click', async () => {
+            const ok = await copyText(String(item.url || ''));
+            showToast(ok ? 'تم نسخ الرابط' : 'فشل النسخ', ok ? 'copy' : 'error');
+          });
+
+          const delBtn = document.createElement('button');
+          delBtn.className = "press-glow soft bg-red-700/20 hover:bg-red-700/28 border border-red-700/30 text-red-100 font-bold px-3 py-2 rounded-2xl text-sm";
+          delBtn.innerHTML = `<i class="fa-solid fa-trash"></i>`;
+          delBtn.title = 'حذف الرابط';
+          delBtn.addEventListener('click', () => {
+            if(!confirm(`حذف الرابط: ${item.name} ؟`)) return;
+            quickLinks = quickLinks.filter(x => x.id !== item.id);
+            saveLinks();
+            renderLinks();
+            showToast('تم حذف الرابط', 'success');
+          });
+
+          right.appendChild(copyBtn);
+          right.appendChild(delBtn);
+
+          card.appendChild(left);
+          card.appendChild(right);
+          linksWrap.appendChild(card);
+        }
+      }
+
+      function addQuickLink(){
+        flash(addLinkBtn);
+        const name = prompt('اكتب اسم يظهر في الصفحة الرئيسية (مثال: نببل):');
+        if (!name || !String(name).trim()) { showToast('تم الإلغاء (الاسم فارغ).', 'error'); return; }
+
+        const urlIn = prompt('اكتب الرابط (مثال: https://example.com):');
+        if (!urlIn || !String(urlIn).trim()) { showToast('تم الإلغاء (الرابط فارغ).', 'error'); return; }
+
+        const url = normalizeUrl(urlIn);
+        if (!url) { showToast('الرابط غير صحيح.', 'error'); return; }
+
+        const id = 'l_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,6);
+        quickLinks.unshift({ id, name: String(name).trim(), url });
+
+        saveLinks();
+        renderLinks();
+        showToast('تمت إضافة الرابط ✅', 'success');
+      }
+
+      function clearAllLinks(){
+        flash(clearLinksBtn);
+        if(!confirm('هل تريد مسح كل الروابط؟')) return;
+        quickLinks = [];
+        saveLinks();
+        renderLinks();
+        showToast('تم مسح الروابط', 'success');
       }
 
       // Events
@@ -991,39 +1420,46 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         card.addEventListener('click', () => { flash(card); copyField(card.getAttribute('data-copy')); });
       });
 
-      // Tabs
-      tabMain.addEventListener('click', () => setActiveTab(TABS.MAIN));
-      tabGemini.addEventListener('click', () => setActiveTab(TABS.GEMINI));
-
       // Smart tools
       smartStatsBtn.addEventListener('click', toggleSmartPanel);
       clearSearchBtn.addEventListener('click', () => { flash(clearSearchBtn); searchInputEl.value=''; updateUI(); });
       copyCompactBtn.addEventListener('click', copyCompact);
       undoPullBtn.addEventListener('click', undoLastPull);
-
       searchInputEl.addEventListener('input', () => updateUI());
 
-      // Initial load: حمّل الاثنين مرة حتى زر النقل يشتغل فوراً
-      function loadBothOnce(){
-        // MAIN
-        activeTab = TABS.MAIN;
-        loadActive();
-        let last = getLastPulled(TABS.MAIN);
-        if (last) store.main.currentAccount = last;
+      // Inventories UI
+      addInvBtn.addEventListener('click', createNewInventory);
+      settingsBtn.addEventListener('click', openSettings);
+      closeSettingsBtn.addEventListener('click', closeSettings);
+      settingsModal.addEventListener('click', (e) => {
+        if (e.target === settingsModal) closeSettings();
+      });
 
-        // GEMINI
-        activeTab = TABS.GEMINI;
-        loadActive();
-        last = getLastPulled(TABS.GEMINI);
-        if (last) store.gemini.currentAccount = last;
+      // Links UI
+      addLinkBtn.addEventListener('click', addQuickLink);
+      clearLinksBtn.addEventListener('click', clearAllLinks);
 
-        // رجّع للتبويب الأساسي
-        activeTab = TABS.MAIN;
-      }
-
+      // ==========================
+      // Initial load
+      // ==========================
       window.addEventListener('load', () => {
-        loadBothOnce();
-        setActiveTab(TABS.MAIN);
+        ensureMeta();
+
+        // حمّل الروابط
+        loadLinks();
+        renderLinks();
+
+        // حمّل كل المخازن مرة حتى النقل وغيره يشتغل
+        for (const inv of inventoriesMeta) {
+          const prev = activeInvId;
+          activeInvId = inv.id;
+          loadActive();
+          activeInvId = prev;
+        }
+
+        // فعّل الحالي
+        buildTabs();
+        setActiveInventory(activeInvId);
       });
 
       /* =========================
@@ -1040,7 +1476,6 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
       window.addEventListener('resize', resize, { passive:true });
       resize();
 
-      // عدد قليل حتى يبقى سلس
       const flakes = Array.from({ length: 55 }, () => ({
         x: Math.random()*W,
         y: Math.random()*H,
@@ -1063,7 +1498,6 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
           ctx.beginPath();
           ctx.arc(f.x, f.y, f.r, 0, Math.PI*2);
           ctx.closePath();
-          // لون أبيض شفاف
           ctx.fillStyle = `rgba(255,255,255,${f.a})`;
           ctx.fill();
         }
