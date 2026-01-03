@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>مدير المخزون الذكي | Smart Inventory</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
@@ -10,250 +10,294 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <style>
-    :root{ --bg:#0b1224; --panel: rgba(15,23,42,.55); --b: rgba(148,163,184,.18); }
     body{
       font-family:'Tajawal', sans-serif;
       background:
         radial-gradient(900px 500px at 15% -10%, rgba(59,130,246,.18), transparent 60%),
         radial-gradient(800px 500px at 90% 10%, rgba(16,185,129,.12), transparent 55%),
-        var(--bg);
+        #0b1224;
       color:#e2e8f0;
       overflow-x:hidden;
     }
+
+    /* Scrollbar */
     ::-webkit-scrollbar{ width:8px; }
     ::-webkit-scrollbar-track{ background:#070c18; }
     ::-webkit-scrollbar-thumb{ background:#3b82f6; border-radius:6px; }
     ::-webkit-scrollbar-thumb:hover{ background:#2563eb; }
 
-    .glass{ background: var(--panel); border:1px solid var(--b); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
-    .soft{ transition: background .16s ease, border-color .16s ease, box-shadow .16s ease, transform .06s ease; }
-    .press:active{ box-shadow: 0 0 0 3px rgba(255,255,255,.08), 0 0 18px rgba(59,130,246,.20); transform: translateY(1px); }
-    .flash{ animation: flash .22s ease-out; }
-    @keyframes flash{ to{ box-shadow: 0 0 0 3px rgba(255,255,255,.08), 0 0 22px rgba(56,189,248,.20); } }
-
-    .glow{ color:#cbd5e1; text-shadow: 0 0 10px rgba(56,189,248,.18), 0 0 22px rgba(16,185,129,.10); }
-    .break-any{ word-break: break-word; overflow-wrap:anywhere; }
-
-    #snowCanvas{ position:fixed; inset:0; pointer-events:none; z-index:5; opacity:.55; }
-
-    /* Modal */
-    .modal{
-      position:fixed; inset:0; background: rgba(0,0,0,.55);
-      z-index:60; display:none; padding: calc(12px + env(safe-area-inset-top)) 12px 12px;
-      overflow:auto; -webkit-overflow-scrolling:touch;
-    }
-    .modal.open{ display:flex; align-items:flex-start; justify-content:center; }
-    .modal-card{ width:100%; max-width:980px; max-height: calc(100vh - 28px - env(safe-area-inset-top)); overflow:auto; -webkit-overflow-scrolling:touch; }
-    .sticky-head{
-      position:sticky; top:0; z-index:5;
-      background: rgba(15,23,42,.92);
-      border-bottom:1px solid var(--b);
-      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-      border-radius:18px; padding:10px 12px; margin-bottom:10px;
+    /* Glass (خفيف وسلس) */
+    .glass-panel{
+      background: rgba(15,23,42,.55);
+      border: 1px solid rgba(148,163,184,.18);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
     }
 
-    /* file input hidden (still selectable via label) */
-    .file-real{
-      position: fixed; left: -9999px; top:0; width:1px; height:1px;
-      opacity:0; pointer-events:none;
+    /* إزالة الحركات الثقيلة + إبقاء انتقالات بسيطة */
+    .soft{
+      transition: background .16s ease, border-color .16s ease, box-shadow .16s ease, transform .06s ease;
+      will-change: auto;
+    }
+
+    /* لمعة بسيطة عند الضغط */
+    .press-glow:active{
+      box-shadow: 0 0 0 3px rgba(255,255,255,.08), 0 0 18px rgba(59,130,246,.20);
+      transform: translateY(1px);
+    }
+
+    /* لمعة قصيرة (JS يضيف class) */
+    .flash{
+      animation: flash .22s ease-out;
+    }
+    @keyframes flash{
+      0%{ box-shadow: 0 0 0 rgba(255,255,255,0); }
+      100%{ box-shadow: 0 0 0 3px rgba(255,255,255,.08), 0 0 22px rgba(56,189,248,.20); }
+    }
+
+    /* نص يلمع (الكلام التوضيحي) */
+    .glow-text{
+      color:#cbd5e1;
+      text-shadow:
+        0 0 10px rgba(56,189,248,.18),
+        0 0 22px rgba(16,185,129,.10);
+    }
+
+    /* حقول النسخ */
+    .field-copy{
+      cursor:pointer;
+      transition: background .16s ease, border-color .16s ease, box-shadow .16s ease;
+    }
+    .field-copy:hover{
+      background-color: rgba(51,65,85,.25);
+      border-color: rgba(59,130,246,.35);
+      box-shadow: 0 10px 25px rgba(0,0,0,.18);
+    }
+
+    /* شارات التبويب */
+    .tab-pill{
+      border: 1px solid rgba(148,163,184,.18);
+      background: rgba(2,6,23,.45);
+    }
+    .tab-active{
+      border-color: rgba(59,130,246,.45);
+      background: rgba(59,130,246,.10);
+      box-shadow: 0 0 0 3px rgba(59,130,246,.12);
+    }
+
+    /* Canvas snow overlay */
+    #snowCanvas{
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5;
+      opacity: .55; /* خفيف */
     }
   </style>
 </head>
 
-<body class="min-h-screen flex flex-col items-center py-5 px-3">
+<body class="min-h-screen flex flex-col items-center py-10 px-4">
+
+  <!-- ثلج خفيف شفاف -->
   <canvas id="snowCanvas"></canvas>
 
-  <!-- Header (✅ Mobile-first) -->
-  <header class="w-full max-w-5xl mb-4 relative z-10">
-    <div class="glass soft rounded-3xl p-4">
-      <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div class="min-w-0">
-          <h1 class="text-2xl md:text-3xl font-extrabold text-blue-400 flex items-center gap-3">
-            <i class="fa-solid fa-boxes-stacked"></i>
-            <span id="titleName" class="break-any">المخزون الرئيسي</span>
-          </h1>
-          <p class="text-slate-400 text-sm">نظام إدارة وتوزيع الحسابات التلقائي</p>
-          <p class="glow text-xs mt-1">
-            ملاحظة: النسخ يعمل أفضل على HTTPS أو localhost — وتمت إزالة الحركات الثقيلة لتسريع الهاتف ✨
-          </p>
-        </div>
+  <header class="w-full max-w-5xl mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-5 relative z-10">
+    <div class="space-y-1">
+      <h1 class="text-3xl font-extrabold text-blue-400 flex items-center gap-3">
+        <i class="fa-solid fa-boxes-stacked"></i>
+        <span id="titleName">المخزون الذكي</span>
+      </h1>
+      <p class="text-slate-400 text-sm">نظام إدارة وتوزيع الحسابات التلقائي</p>
+      <p class="glow-text text-xs">
+        ملاحظة: النسخ يعمل أفضل على HTTPS أو localhost — وتمت إزالة الحركات الثقيلة لتسريع الموقع ✨
+      </p>
+    </div>
 
-        <!-- ✅ Mobile layout: full width controls -->
-        <div class="w-full md:w-auto flex flex-col gap-3">
-          <div class="flex flex-wrap gap-2 items-center justify-between">
-            <div id="homeLinks" class="hidden flex-wrap gap-2"></div>
-            <button id="settingsBtn" class="press soft glass px-3 py-2 rounded-2xl text-sm font-bold">
-              <i class="fa-solid fa-gear ml-2 text-slate-200"></i> إعدادات
-            </button>
-          </div>
+    <div class="flex gap-3 w-full md:w-auto items-center">
+      <!-- تبويبات: الأساسي / Gemini -->
+      <div class="flex gap-2">
+        <button id="tabMain" class="press-glow soft tab-pill tab-active px-4 py-2 rounded-2xl text-sm font-bold text-slate-100">
+          <i class="fa-solid fa-layer-group ml-2 text-blue-300"></i> الأساسي
+        </button>
+        <button id="tabGemini" class="press-glow soft tab-pill px-4 py-2 rounded-2xl text-sm font-bold text-slate-100">
+          <i class="fa-solid fa-wand-magic-sparkles ml-2 text-purple-300"></i> Gemini
+        </button>
+      </div>
 
-          <div id="tabsWrap" class="flex gap-2 flex-wrap"></div>
-
-          <!-- ✅ Mobile: cards share width -->
-          <div class="grid grid-cols-2 gap-2">
-            <div class="glass soft px-4 py-3 rounded-2xl text-center">
-              <span class="block text-xs text-slate-400">المتوفر</span>
-              <span id="stockCount" class="text-2xl font-extrabold text-emerald-300">0</span>
-            </div>
-            <div class="glass soft px-4 py-3 rounded-2xl text-center">
-              <span class="block text-xs text-slate-400">تم سحبها</span>
-              <span id="pulledCount" class="text-2xl font-extrabold text-purple-300">0</span>
-            </div>
-          </div>
-        </div>
+      <div class="glass-panel soft px-5 py-3 rounded-2xl text-center shadow-lg shadow-blue-500/10">
+        <span class="block text-xs text-slate-400">المتوفر بالمخزون</span>
+        <span id="stockCount" class="text-2xl font-extrabold text-emerald-300">0</span>
+      </div>
+      <div class="glass-panel soft px-5 py-3 rounded-2xl text-center shadow-lg shadow-purple-500/10">
+        <span class="block text-xs text-slate-400">تم سحبها</span>
+        <span id="pulledCount" class="text-2xl font-extrabold text-purple-300">0</span>
       </div>
     </div>
   </header>
 
-  <main class="w-full max-w-5xl space-y-4 relative z-10">
+  <main class="w-full max-w-5xl space-y-6 relative z-10">
 
-    <!-- Smart tools -->
-    <section class="glass soft p-4 rounded-3xl">
-      <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+    <!-- أدوات ذكية سريعة -->
+    <section class="glass-panel soft p-5 rounded-3xl shadow-xl">
+      <div class="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
         <div class="flex items-center gap-2">
           <i class="fa-solid fa-sparkles text-amber-300"></i>
           <span class="font-extrabold text-white">أدوات ذكية</span>
-          <span class="text-xs glow">بحث + ملخص + تراجع</span>
+          <span class="text-xs glow-text">تسريع الشغل + منع التكرار + بحث سريع</span>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full md:w-auto">
-          <div class="relative sm:col-span-1">
+        <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          <div class="relative flex-1 md:w-72">
             <input id="searchInput" type="text"
-              class="w-full bg-slate-950/30 text-sm text-white px-4 py-3 rounded-2xl border border-slate-700/60 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none placeholder-slate-500"
+              class="w-full bg-slate-950/30 text-sm text-white px-4 py-3 rounded-2xl border border-slate-700/60 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition placeholder-slate-500"
               placeholder="بحث داخل المخزون (بالإيميل)..." />
             <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
           </div>
 
           <button id="smartStatsBtn"
-            class="press soft bg-slate-800/55 hover:bg-slate-700/60 border border-slate-700/60 text-white font-bold px-4 py-3 rounded-2xl flex items-center justify-center gap-2">
-            <i class="fa-solid fa-chart-simple text-emerald-300"></i><span>ملخص</span>
+            class="press-glow soft bg-slate-800/55 hover:bg-slate-700/60 border border-slate-700/60 text-white font-bold px-5 py-3 rounded-2xl flex items-center justify-center gap-2">
+            <i class="fa-solid fa-chart-simple text-emerald-300"></i>
+            <span>ملخص ذكي</span>
           </button>
 
           <button id="undoPullBtn"
-            class="press soft bg-slate-800/55 hover:bg-slate-700/60 border border-slate-700/60 text-white font-bold px-4 py-3 rounded-2xl flex items-center justify-center gap-2">
-            <i class="fa-solid fa-rotate-left text-amber-300"></i><span>تراجع</span>
+            class="press-glow soft bg-slate-800/55 hover:bg-slate-700/60 border border-slate-700/60 text-white font-bold px-5 py-3 rounded-2xl flex items-center justify-center gap-2">
+            <i class="fa-solid fa-rotate-left text-amber-300"></i>
+            <span>تراجع عن آخر سحب</span>
           </button>
         </div>
       </div>
 
-      <div id="smartPanel" class="hidden mt-3 bg-slate-950/25 border border-slate-700/40 rounded-2xl p-3">
-        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div class="text-sm text-slate-200 min-w-0">
+      <div id="smartPanel" class="hidden mt-4 bg-slate-950/25 border border-slate-700/40 rounded-2xl p-4">
+        <div class="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+          <div class="text-sm text-slate-200">
             <div class="font-bold mb-1">📌 ملخص المخزون الحالي</div>
-            <div class="text-xs glow break-any" id="smartSummary">---</div>
+            <div class="text-xs glow-text" id="smartSummary">---</div>
           </div>
-          <div class="flex flex-wrap gap-2">
-            <button id="copyCompactBtn" class="press soft bg-indigo-600/70 hover:bg-indigo-600 text-white font-bold px-4 py-2 rounded-2xl flex items-center gap-2">
-              <i class="fa-solid fa-clipboard text-indigo-100"></i><span>نسخ سطر</span>
+          <div class="flex gap-2">
+            <button id="copyCompactBtn"
+              class="press-glow soft bg-indigo-600/70 hover:bg-indigo-600 text-white font-bold px-4 py-2 rounded-2xl flex items-center gap-2">
+              <i class="fa-solid fa-clipboard text-indigo-100"></i>
+              <span>نسخ آخر حساب (سطر واحد)</span>
             </button>
-            <button id="clearSearchBtn" class="press soft bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/60 text-white font-bold px-4 py-2 rounded-2xl flex items-center gap-2">
-              <i class="fa-solid fa-eraser text-slate-200"></i><span>مسح البحث</span>
+            <button id="clearSearchBtn"
+              class="press-glow soft bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/60 text-white font-bold px-4 py-2 rounded-2xl flex items-center gap-2">
+              <i class="fa-solid fa-eraser text-slate-200"></i>
+              <span>مسح البحث</span>
             </button>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Feed -->
-    <section class="glass soft p-4 rounded-3xl">
-      <div class="flex justify-between items-center mb-3 gap-3">
-        <h2 class="text-lg md:text-xl font-bold text-white flex items-center gap-2">
-          <i class="fa-solid fa-cloud-arrow-up text-blue-400"></i><span>تغذية المخزون</span>
+    <section class="glass-panel soft p-6 rounded-3xl shadow-xl">
+      <div class="flex justify-between items-center mb-4 gap-3">
+        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-cloud-arrow-up text-blue-400"></i>
+          <span>تغذية المخزون</span>
         </h2>
-        <button id="toggleBtn" class="press soft text-slate-300 hover:text-white text-sm underline">إخفاء/إظهار</button>
+
+        <button id="toggleBtn" class="press-glow soft text-slate-300 hover:text-white text-sm underline">
+          إخفاء/إظهار
+        </button>
       </div>
 
-      <div id="inputSection" class="space-y-3">
-        <textarea id="bulkInput" rows="4"
-          class="w-full bg-slate-950/30 text-sm text-white p-4 rounded-2xl border border-slate-700/60 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none placeholder-slate-500"
-          placeholder="email;pass;recovery;url"></textarea>
+      <div id="inputSection" class="space-y-4">
+        <!-- التنسيق القديم -->
+        <textarea id="bulkInput" rows="5"
+          class="w-full bg-slate-950/30 text-sm text-white p-4 rounded-2xl border border-slate-700/60 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition placeholder-slate-500"
+          placeholder="ضع القائمة هنا بالتنسيق:
+email;pass;recovery;url
+email;pass;recovery;url"></textarea>
 
+        <!-- خانة اختيارية سريعة -->
         <div class="bg-slate-950/15 border border-slate-700/40 rounded-2xl p-3">
           <div class="flex items-center gap-2 mb-2 text-slate-200">
             <i class="fa-solid fa-bolt text-amber-300"></i>
-            <span class="font-bold">خانة إضافية (اختياري)</span>
+            <span class="font-bold">خانة إضافية (اختياري) — تنسيق سريع</span>
           </div>
-          <p class="text-xs glow mb-2">كل سطر: <span class="font-mono text-slate-200">email@gmail.comPASSWORD</span></p>
-          <textarea id="quickInput" rows="2"
-            class="w-full bg-slate-950/30 text-sm text-white p-4 rounded-2xl border border-slate-700/60 focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 outline-none placeholder-slate-500"
-            placeholder="oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
+          <p class="text-xs glow-text mb-2">
+            كل سطر: <span class="font-mono text-slate-200">email@gmail.comPASSWORD</span> (بدون فواصل)
+          </p>
+          <textarea id="quickInput" rows="3"
+            class="w-full bg-slate-950/30 text-sm text-white p-4 rounded-2xl border border-slate-700/60 focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 outline-none transition placeholder-slate-500"
+            placeholder="مثال:
+oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         </div>
 
-        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div class="flex flex-col md:flex-row justify-between gap-3">
           <button id="clearBtn"
-            class="press soft text-red-200 hover:text-red-100 px-4 py-2 rounded-xl border border-red-900/40 bg-red-950/20 hover:bg-red-950/30 w-full md:w-auto">
+            class="press-glow soft text-red-200 hover:text-red-100 transition px-4 py-2 rounded-xl border border-red-900/40 bg-red-950/20 hover:bg-red-950/30">
             <i class="fa-solid fa-trash ml-1"></i> تصفير المخزون
           </button>
 
-          <!-- ✅ Mobile: buttons grid -->
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full md:w-auto">
-            <label for="importFile" id="importBtn"
-              class="press soft bg-slate-800/55 hover:bg-slate-700/60 border border-slate-700/60 text-white font-bold py-3 px-4 rounded-2xl flex items-center justify-center gap-2 cursor-pointer select-none">
-              <i class="fa-solid fa-file-arrow-up text-blue-300"></i><span>TXT</span>
-            </label>
-            <input id="importFile" type="file" class="file-real" accept=".txt,text/plain" />
+          <div class="flex flex-col sm:flex-row gap-3">
+            <button id="importBtn"
+              class="press-glow soft bg-slate-800/55 hover:bg-slate-700/60 border border-slate-700/60 text-white font-bold py-3 px-6 rounded-2xl flex items-center justify-center gap-2">
+              <i class="fa-solid fa-file-arrow-up text-blue-300"></i>
+              <span>استيراد ملف</span>
+            </button>
+            <input id="importFile" type="file" accept=".txt" class="hidden" />
 
             <button id="exportBtn"
-              class="press soft bg-slate-800/55 hover:bg-slate-700/60 border border-slate-700/60 text-white font-bold py-3 px-4 rounded-2xl flex items-center justify-center gap-2">
-              <i class="fa-solid fa-file-arrow-down text-emerald-300"></i><span>تصدير بحث</span>
-            </button>
-
-            <button id="exportRemainingBtn"
-              class="press soft bg-emerald-700/18 hover:bg-emerald-700/25 border border-emerald-700/25 text-emerald-100 font-bold py-3 px-4 rounded-2xl flex items-center justify-center gap-2">
-              <i class="fa-solid fa-box-open text-emerald-300"></i><span>تصدير الكل</span>
+              class="press-glow soft bg-slate-800/55 hover:bg-slate-700/60 border border-slate-700/60 text-white font-bold py-3 px-6 rounded-2xl flex items-center justify-center gap-2">
+              <i class="fa-solid fa-file-arrow-down text-emerald-300"></i>
+              <span>تصدير المخزون</span>
             </button>
 
             <button id="addBtn"
-              class="press soft col-span-2 sm:col-span-1 bg-blue-600 hover:bg-blue-500 text-white font-extrabold py-3 px-4 rounded-2xl flex items-center justify-center gap-2">
-              <i class="fa-solid fa-plus"></i><span>إضافة</span>
+              class="press-glow soft bg-blue-600 hover:bg-blue-500 text-white font-extrabold py-3 px-7 rounded-2xl shadow-lg shadow-blue-600/15 flex items-center justify-center gap-2">
+              <i class="fa-solid fa-plus"></i>
+              <span>إضافة للمخزون</span>
             </button>
           </div>
         </div>
-
-        <p class="text-[11px] glow">✅ الاستيراد يدعم ملفات بها هيدر {login} ويتم تجاهله تلقائياً.</p>
       </div>
     </section>
 
-    <!-- Pull -->
-    <div class="flex justify-center">
+    <div class="flex justify-center py-2">
       <button id="pullBtn"
-        class="press soft w-full md:w-auto bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-xl font-black py-4 px-6 rounded-3xl shadow-2xl shadow-emerald-500/20">
+        class="press-glow soft relative group bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-2xl font-black py-5 px-8 md:px-12 rounded-3xl shadow-2xl shadow-emerald-500/20 w-full md:w-auto">
         <div class="flex items-center justify-center gap-3">
-          <i class="fa-solid fa-hand-holding-hand"></i><span>سحب حساب جديد</span>
+          <i class="fa-solid fa-hand-holding-hand"></i>
+          <span>سحب حساب جديد</span>
         </div>
       </button>
     </div>
 
-    <!-- Result -->
     <section id="resultArea" class="hidden">
-      <div class="glass soft p-1 rounded-[26px] border border-slate-600/50">
-        <div class="bg-slate-950/25 rounded-[22px] p-4">
-          <div class="flex flex-col gap-2 md:flex-row md:justify-between md:items-center mb-3 pb-3 border-b border-slate-700/60">
+      <div class="glass-panel soft p-1 rounded-[26px] border border-slate-600/50 shadow-2xl">
+        <div class="bg-slate-950/25 rounded-[22px] p-6">
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 pb-4 border-b border-slate-700/60 gap-2">
             <span class="text-emerald-300 font-extrabold text-lg flex items-center gap-2">
-              <i class="fa-solid fa-check-circle"></i>تم السحب بنجاح
+              <i class="fa-solid fa-check-circle"></i>
+              تم السحب بنجاح
             </span>
             <span class="text-xs text-slate-400 font-mono" id="timestamp"></span>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-            <div class="press soft bg-slate-950/25 p-3 rounded-2xl border border-slate-700/60 group" data-copy="email">
-              <label class="text-xs text-slate-400 block mb-1">Email</label>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div class="press-glow field-copy soft bg-slate-950/25 p-3 rounded-2xl border border-slate-700/60 group"
+                 data-copy="email">
+              <label class="text-xs text-slate-400 block mb-1">البريد الإلكتروني (Email)</label>
               <div class="flex justify-between items-center gap-3">
                 <span id="emailDisplay" class="font-mono text-blue-300 truncate">---</span>
                 <i class="fa-regular fa-copy text-slate-500 group-hover:text-white"></i>
               </div>
             </div>
 
-            <div class="press soft bg-slate-950/25 p-3 rounded-2xl border border-slate-700/60 group" data-copy="password">
-              <label class="text-xs text-slate-400 block mb-1">Password</label>
+            <div class="press-glow field-copy soft bg-slate-950/25 p-3 rounded-2xl border border-slate-700/60 group"
+                 data-copy="password">
+              <label class="text-xs text-slate-400 block mb-1">كلمة المرور (Password)</label>
               <div class="flex justify-between items-center gap-3">
                 <span id="passDisplay" class="font-mono text-rose-300 truncate">---</span>
                 <i class="fa-regular fa-copy text-slate-500 group-hover:text-white"></i>
               </div>
             </div>
 
-            <div class="press soft bg-slate-950/25 p-3 rounded-2xl border border-slate-700/60 group" data-copy="recovery">
-              <label class="text-xs text-slate-400 block mb-1">Recovery</label>
+            <div class="press-glow field-copy soft bg-slate-950/25 p-3 rounded-2xl border border-slate-700/60 group"
+                 data-copy="recovery">
+              <label class="text-xs text-slate-400 block mb-1">الاسترداد (Recovery Email)</label>
               <div class="flex justify-between items-center gap-3">
                 <span id="recDisplay" class="font-mono text-amber-300 truncate">---</span>
                 <i class="fa-regular fa-copy text-slate-500 group-hover:text-white"></i>
@@ -262,891 +306,772 @@
 
             <div class="soft bg-slate-950/25 p-3 rounded-2xl border border-slate-700/60 flex justify-between items-center gap-3">
               <div>
-                <label class="text-xs text-slate-400 block mb-1">Webhook</label>
-                <span class="text-xs glow">للوصول لكود التحقق</span>
+                <label class="text-xs text-slate-400 block mb-1">رابط الرسائل (Webhook)</label>
+                <span class="text-xs glow-text">للوصول لكود التحقق</span>
               </div>
               <a id="urlBtn" href="#" target="_blank" rel="noopener"
-                 class="press soft bg-indigo-600 hover:bg-indigo-500 text-white text-sm px-4 py-2 rounded-xl">
+                 class="press-glow soft bg-indigo-600 hover:bg-indigo-500 text-white text-sm px-4 py-2 rounded-xl transition shadow-lg shadow-indigo-600/15">
                 <i class="fa-solid fa-arrow-up-right-from-square ml-1"></i> فتح
               </a>
             </div>
           </div>
 
-          <div class="space-y-2">
-            <button id="copyFullBtn" class="press soft w-full bg-slate-800/55 hover:bg-slate-700/60 border border-slate-700/60 text-white font-bold py-3 rounded-2xl flex items-center justify-center gap-2">
-              <i class="fa-solid fa-clipboard-list text-blue-300"></i><span>نسخ شامل</span>
+          <div class="mt-2 space-y-2">
+            <button id="copyFullBtn"
+              class="press-glow soft w-full bg-slate-800/55 hover:bg-slate-700/60 border border-slate-700/60 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 group">
+              <i class="fa-solid fa-clipboard-list text-blue-300"></i>
+              <span>نسخ المعلومات كاملة (شامل)</span>
             </button>
 
-            <button id="copyEPBtn" class="press soft w-full bg-blue-700/18 hover:bg-blue-700/25 border border-blue-700/25 text-blue-100 font-bold py-3 rounded-2xl text-sm">
-              نسخ Email + Pass
-            </button>
-
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <button id="restoreBtn" class="press soft bg-emerald-700/30 hover:bg-emerald-700/40 border border-emerald-700/35 text-emerald-100 font-bold py-3 rounded-2xl">
-                <i class="fa-solid fa-rotate-left text-emerald-300 ml-2"></i>استرجاع
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+              <button id="restoreBtn"
+                class="press-glow soft bg-emerald-700/30 hover:bg-emerald-700/40 border border-emerald-700/35 text-emerald-100 font-bold py-3 rounded-2xl flex items-center justify-center gap-2">
+                <i class="fa-solid fa-rotate-left text-emerald-300"></i>
+                <span>استرجاع للمخزون</span>
               </button>
 
-              <button id="deleteLastBtn" class="press soft bg-red-700/20 hover:bg-red-700/28 border border-red-700/30 text-red-100 font-bold py-3 rounded-2xl">
-                <i class="fa-solid fa-xmark text-red-300 ml-2"></i>حذف من الشاشة
+              <button id="deleteLastBtn"
+                class="press-glow soft bg-red-700/20 hover:bg-red-700/28 border border-red-700/30 text-red-100 font-bold py-3 rounded-2xl flex items-center justify-center gap-2">
+                <i class="fa-solid fa-xmark text-red-300"></i>
+                <span>حذف من الشاشة</span>
               </button>
 
-              <button id="moveBtn" class="press soft bg-purple-700/25 hover:bg-purple-700/35 border border-purple-700/35 text-purple-100 font-bold py-3 rounded-2xl">
-                <i class="fa-solid fa-right-left text-purple-300 ml-2"></i>نقل
+              <!-- زر نقل للمخزون الثاني -->
+              <button id="moveToGeminiBtn"
+                class="press-glow soft bg-purple-700/25 hover:bg-purple-700/35 border border-purple-700/35 text-purple-100 font-bold py-3 rounded-2xl flex items-center justify-center gap-2">
+                <i class="fa-solid fa-right-left text-purple-300"></i>
+                <span>نقل إلى Gemini</span>
               </button>
             </div>
 
-            <div id="moveTargets" class="hidden flex flex-wrap gap-2 pt-1"></div>
-
-            <p class="text-center text-[11px] glow">✅ آخر حساب مسحوب يبقى محفوظ حتى لو خرجت ورجعت لاحقاً.</p>
+            <p class="text-center text-[11px] glow-text">
+              ✅ آخر حساب مسحوب يبقى محفوظ حتى لو خرجت ورجعت لاحقاً.
+            </p>
           </div>
+
         </div>
       </div>
     </section>
 
   </main>
 
-  <!-- ✅ Toast (RTL: right) -->
+  <!-- Toast -->
   <div id="toast"
-    class="fixed bottom-5 right-5 left-auto bg-slate-900/90 border border-slate-700/70 text-white px-5 py-3 rounded-2xl shadow-2xl transform translate-y-20 opacity-0 transition-all duration-300 z-[70] flex items-center gap-3">
+    class="fixed bottom-5 left-5 bg-slate-900/90 border border-slate-700/70 text-white px-5 py-3 rounded-2xl shadow-2xl transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center gap-3">
     <i id="toastIcon" class="fa-solid fa-info-circle"></i>
     <span id="toastMsg">تم العملية بنجاح</span>
   </div>
 
-  <!-- Settings Modal (كما هو تقريباً لكن أخف) -->
-  <div id="settingsModal" class="modal">
-    <div class="glass soft modal-card rounded-3xl border border-slate-600/40 p-3">
-      <div class="sticky-head">
-        <div class="flex items-center justify-between gap-2">
-          <div class="flex items-center gap-2 min-w-0">
-            <i class="fa-solid fa-gear text-slate-200"></i>
-            <span class="font-extrabold text-white">الإعدادات</span>
-            <span class="text-[11px] glow break-any">مخزونات + روابط + تحكم</span>
-          </div>
-          <button id="closeSettingsBtn" class="press soft glass px-3 py-2 rounded-2xl text-sm font-bold">إغلاق</button>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <div class="bg-slate-950/18 border border-slate-700/35 rounded-2xl p-3">
-          <div class="font-extrabold text-white mb-2">
-            <i class="fa-solid fa-layer-group ml-2 text-blue-300"></i> إدارة المخزونات
-          </div>
-          <div id="invList" class="space-y-2"></div>
-
-          <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-2">
-            <input id="newInvName" type="text"
-              class="bg-slate-950/25 text-sm text-white px-3 py-2 rounded-2xl border border-slate-700/60 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15 outline-none"
-              placeholder="اسم مخزون جديد" />
-            <button id="addInvBtn" class="press soft bg-blue-600 hover:bg-blue-500 text-white font-extrabold px-4 py-2 rounded-2xl text-sm">
-              إضافة
-            </button>
-            <button id="resetRulesBtn" class="press soft bg-slate-800/50 hover:bg-slate-700/55 border border-slate-700/60 text-white font-bold px-4 py-2 rounded-2xl text-sm">
-              إعادة قواعد النقل
-            </button>
-          </div>
-
-          <p class="mt-2 text-[11px] glow break-any">
-            * لا يمكنك حذف المخزون الرئيسي.
-          </p>
-        </div>
-
-        <div class="bg-slate-950/18 border border-slate-700/35 rounded-2xl p-3">
-          <div class="font-extrabold text-white mb-2">
-            <i class="fa-solid fa-link ml-2 text-emerald-300"></i> روابط الصفحة الرئيسية
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2">
-            <input id="linkName" type="text"
-              class="bg-slate-950/25 text-sm text-white px-3 py-2 rounded-2xl border border-slate-700/60 outline-none"
-              placeholder="اسم الزر" />
-            <input id="linkUrl" type="url"
-              class="bg-slate-950/25 text-sm text-white px-3 py-2 rounded-2xl border border-slate-700/60 outline-none"
-              placeholder="https://..." />
-            <button id="addLinkBtn" class="press soft bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold px-4 py-2 rounded-2xl text-sm">
-              إضافة رابط
-            </button>
-          </div>
-
-          <div class="flex items-center gap-2 mb-2">
-            <label class="text-xs text-slate-200">الحد الأقصى:</label>
-            <input id="maxLinksInput" type="number" min="0" step="1"
-              class="w-24 bg-slate-950/25 text-sm text-white px-3 py-2 rounded-2xl border border-slate-700/60 outline-none" />
-            <button id="saveMaxLinksBtn" class="press soft bg-slate-800/50 hover:bg-slate-700/55 border border-slate-700/60 text-white font-bold px-4 py-2 rounded-2xl text-sm">
-              حفظ
-            </button>
-          </div>
-
-          <div id="linksList" class="space-y-2"></div>
-          <p class="mt-2 text-[11px] glow break-any">* لن يظهر زر بالصفحة الرئيسية إلا إذا أضفته هنا.</p>
-        </div>
-
-        <div class="bg-slate-950/18 border border-slate-700/35 rounded-2xl p-3 lg:col-span-2">
-          <div class="font-extrabold text-white mb-2">
-            <i class="fa-solid fa-sliders ml-2 text-purple-300"></i> إعدادات مهمة
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
-            <label class="flex items-center gap-2 bg-slate-950/20 border border-slate-700/40 rounded-2xl px-3 py-2">
-              <input id="toggleSnow" type="checkbox" class="accent-blue-500"><span>ثلج خفيف</span>
-            </label>
-            <label class="flex items-center gap-2 bg-slate-950/20 border border-slate-700/40 rounded-2xl px-3 py-2">
-              <input id="toggleSmart" type="checkbox" class="accent-blue-500"><span>لوحة الملخص</span>
-            </label>
-            <label class="flex items-center gap-2 bg-slate-950/20 border border-slate-700/40 rounded-2xl px-3 py-2">
-              <input id="toggleFeed" type="checkbox" class="accent-blue-500"><span>قسم التغذية</span>
-            </label>
-          </div>
-
-          <div class="mt-3 flex flex-wrap gap-2 justify-between">
-            <button id="saveSettingsBtn" class="press soft bg-purple-600 hover:bg-purple-500 text-white font-extrabold px-5 py-2.5 rounded-2xl text-sm">
-              حفظ الإعدادات
-            </button>
-            <button id="resetAllBtn" class="press soft bg-red-700/18 hover:bg-red-700/25 border border-red-700/25 text-red-100 font-bold px-5 py-2.5 rounded-2xl text-sm">
-              تصفير كل شيء
-            </button>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
   <script>
-  (() => {
-    const $ = (id) => document.getElementById(id);
-    const on = (el, ev, fn, opt) => el && el.addEventListener(ev, fn, opt);
+    (function () {
+      // DOM
+      const stockCountEl = document.getElementById('stockCount');
+      const pulledCountEl = document.getElementById('pulledCount');
 
-    // DOM
-    const stockCountEl=$('stockCount'), pulledCountEl=$('pulledCount'), titleNameEl=$('titleName'), tabsWrap=$('tabsWrap'), homeLinksEl=$('homeLinks');
-    const inputSectionEl=$('inputSection'), bulkInputEl=$('bulkInput'), quickInputEl=$('quickInput');
-    const searchInputEl=$('searchInput'), smartStatsBtn=$('smartStatsBtn'), smartPanel=$('smartPanel'), smartSummary=$('smartSummary');
-    const clearSearchBtn=$('clearSearchBtn'), copyCompactBtn=$('copyCompactBtn'), undoPullBtn=$('undoPullBtn');
-    const resultAreaEl=$('resultArea'), timestampEl=$('timestamp');
-    const emailDisplayEl=$('emailDisplay'), passDisplayEl=$('passDisplay'), recDisplayEl=$('recDisplay'), urlBtnEl=$('urlBtn');
-    const toggleBtn=$('toggleBtn'), clearBtn=$('clearBtn'), addBtn=$('addBtn'), pullBtn=$('pullBtn');
-    const copyFullBtn=$('copyFullBtn'), copyEPBtn=$('copyEPBtn');
-    const restoreBtn=$('restoreBtn'), deleteLastBtn=$('deleteLastBtn'), moveBtn=$('moveBtn'), moveTargetsEl=$('moveTargets');
-    const importFile=$('importFile'), exportBtn=$('exportBtn'), exportRemainingBtn=$('exportRemainingBtn');
+      const titleNameEl = document.getElementById('titleName');
 
-    // toast
-    const toast=$('toast'), toastMsg=$('toastMsg'), toastIcon=$('toastIcon');
-    let toastTimeout;
-    const flash = (el)=>{ if(!el) return; el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'),260); };
-    const showToast=(msg,type='info')=>{
-      toastMsg.textContent=msg;
-      toast.className="fixed bottom-5 right-5 left-auto px-5 py-3 rounded-2xl shadow-2xl transform transition-all duration-300 z-[70] flex items-center gap-3 font-bold border";
-      const set=(bg,br,tx,ic)=>{ toast.classList.add(bg,br,tx); toastIcon.className=ic; };
-      if(type==='success') set('bg-emerald-950/80','border-emerald-800/60','text-emerald-100',"fa-solid fa-circle-check text-emerald-300");
-      else if(type==='error') set('bg-red-950/80','border-red-800/60','text-red-100',"fa-solid fa-triangle-exclamation text-red-300");
-      else if(type==='copy') set('bg-blue-950/80','border-blue-800/60','text-blue-100',"fa-solid fa-copy text-blue-300");
-      else set('bg-slate-900/90','border-slate-700/70','text-white',"fa-solid fa-info-circle text-slate-200");
-      toast.classList.remove('translate-y-20','opacity-0');
-      clearTimeout(toastTimeout);
-      toastTimeout=setTimeout(()=>toast.classList.add('translate-y-20','opacity-0'),2200);
-    };
+      const tabMain = document.getElementById('tabMain');
+      const tabGemini = document.getElementById('tabGemini');
 
-    const copyText= async (text)=>{
-      try{ if(navigator.clipboard && window.isSecureContext){ await navigator.clipboard.writeText(text); return true; } }catch(_){}
-      try{
-        const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.top='-9999px';
-        document.body.appendChild(ta); ta.focus(); ta.select();
-        const ok=document.execCommand('copy'); ta.remove(); return ok;
-      }catch(_){ return false; }
-    };
+      const inputSectionEl = document.getElementById('inputSection');
+      const bulkInputEl = document.getElementById('bulkInput');
+      const quickInputEl = document.getElementById('quickInput');
 
-    // safer clone (بديل structuredClone)
-    const clone = (x)=> JSON.parse(JSON.stringify(x));
+      const searchInputEl = document.getElementById('searchInput');
+      const smartStatsBtn = document.getElementById('smartStatsBtn');
+      const smartPanel = document.getElementById('smartPanel');
+      const smartSummary = document.getElementById('smartSummary');
+      const clearSearchBtn = document.getElementById('clearSearchBtn');
+      const copyCompactBtn = document.getElementById('copyCompactBtn');
+      const undoPullBtn = document.getElementById('undoPullBtn');
 
-    const CONFIG_KEY='smartInventory_config_v1_user';
-    const defaultConfig={
-      inventories:[{id:'main',name:'الرئيسي',locked:true},{id:'gemini',name:'Gemini',locked:false},{id:'go',name:'Go',locked:false}],
-      moveRules:{ main:['gemini','go'], go:['main','gemini'], gemini:['go'] },
-      links:[], maxLinks:5, ui:{ snow:true, smart:true, feed:true }
-    };
+      const resultAreaEl = document.getElementById('resultArea');
+      const timestampEl = document.getElementById('timestamp');
 
-    const safeJson=(v,f)=>{ try{return JSON.parse(v);}catch{return f;} };
-    let config = (() => {
-      const v=localStorage.getItem(CONFIG_KEY);
-      if(!v) return clone(defaultConfig);
-      const c=safeJson(v,null);
-      if(!c) return clone(defaultConfig);
-      const m=clone(defaultConfig);
-      Object.assign(m,c);
-      m.ui=Object.assign(clone(defaultConfig.ui), c.ui||{});
-      m.links=Array.isArray(c.links)?c.links:[];
-      m.inventories=Array.isArray(c.inventories)&&c.inventories.length?c.inventories:clone(defaultConfig.inventories);
-      m.moveRules=Object.assign(clone(defaultConfig.moveRules), c.moveRules||{});
-      m.maxLinks=Number.isFinite(c.maxLinks)?c.maxLinks:defaultConfig.maxLinks;
-      return m;
-    })();
-    const saveConfig=()=>localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+      const emailDisplayEl = document.getElementById('emailDisplay');
+      const passDisplayEl = document.getElementById('passDisplay');
+      const recDisplayEl = document.getElementById('recDisplay');
+      const urlBtnEl = document.getElementById('urlBtn');
 
-    const invName=(id)=>{
-      const inv=(config.inventories||[]).find(x=>x.id===id);
-      if(!inv) return id;
-      if(inv.id==='go') return 'ChatGPT';
-      return inv.name;
-    };
-    const serviceLabel=(id)=>{
-      if(id==='go') return 'ChatGPT سنوي';
-      if(id==='gemini') return 'Gemini سنوي';
-      if(id==='main') return 'الرئيسي سنوي';
-      return `${invName(id)} سنوي`;
-    };
+      const toggleBtn = document.getElementById('toggleBtn');
+      const clearBtn = document.getElementById('clearBtn');
+      const addBtn = document.getElementById('addBtn');
+      const pullBtn = document.getElementById('pullBtn');
+      const copyFullBtn = document.getElementById('copyFullBtn');
 
-    const keysFor=(id)=>({ data:`smart_${id}_data`, pulled:`smart_${id}_pulled`, last:`smart_${id}_last`, undo:`smart_${id}_undo` });
-    const store={};
-    const ensureStore=(id)=> store[id] || (store[id]={ inventory:[], pulledCounter:0, currentAccount:null });
+      const restoreBtn = document.getElementById('restoreBtn');
+      const deleteLastBtn = document.getElementById('deleteLastBtn');
+      const moveToGeminiBtn = document.getElementById('moveToGeminiBtn');
 
-    const loadInv=(id)=>{
-      const s=ensureStore(id), k=keysFor(id);
-      s.inventory=safeJson(localStorage.getItem(k.data),[]);
-      s.pulledCounter=Number(localStorage.getItem(k.pulled)||0)||0;
-      s.currentAccount=safeJson(localStorage.getItem(k.last), null);
-    };
-    const saveInv=(id)=>{
-      const s=ensureStore(id), k=keysFor(id);
-      localStorage.setItem(k.data, JSON.stringify(s.inventory));
-      localStorage.setItem(k.pulled, String(s.pulledCounter));
-      if(s.currentAccount) localStorage.setItem(k.last, JSON.stringify(s.currentAccount));
-    };
-    const setUndo=(id,obj)=>localStorage.setItem(keysFor(id).undo, JSON.stringify(obj||null));
-    const getUndo=(id)=>safeJson(localStorage.getItem(keysFor(id).undo), null);
-    const clearLast=(id)=>localStorage.removeItem(keysFor(id).last);
+      const importBtn = document.getElementById('importBtn');
+      const importFile = document.getElementById('importFile');
+      const exportBtn = document.getElementById('exportBtn');
 
-    let activeInvId='main';
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMsg');
+      const toastIcon = document.getElementById('toastIcon');
+      let toastTimeout;
 
-    const applySearch=(list)=>{
-      const q=(searchInputEl.value||'').trim().toLowerCase();
-      if(!q) return list;
-      return list.filter(a=>String(a.email||'').toLowerCase().includes(q));
-    };
+      // Tabs / State
+      const TABS = { MAIN: 'main', GEMINI: 'gemini' };
+      let activeTab = TABS.MAIN;
 
-    const setStockColor=(n)=>{
-      stockCountEl.className = n===0 ? "text-2xl font-extrabold text-red-400"
-        : n<5 ? "text-2xl font-extrabold text-amber-300"
-        : "text-2xl font-extrabold text-emerald-300";
-    };
-
-    const displayResult=(acc)=>{
-      if(!acc) return;
-      resultAreaEl.classList.remove('hidden');
-      emailDisplayEl.textContent=acc.email||'---';
-      passDisplayEl.textContent=acc.password||'---';
-      recDisplayEl.textContent=acc.recovery||'غير متوفر';
-      urlBtnEl.href=(acc.url && acc.url!=='')?acc.url:'#';
-      const now=new Date();
-      try{ timestampEl.textContent = now.toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
-      catch{ timestampEl.textContent = now.toLocaleTimeString(); }
-    };
-
-    const updateTitle=()=> titleNameEl.textContent = (activeInvId==='main') ? 'المخزون الرئيسي' : `مخزون ${invName(activeInvId)}`;
-
-    const strength=(p)=>{
-      if(!p) return 'غير معروف';
-      let s=0;
-      if(p.length>=10) s++;
-      if(/[A-Z]/.test(p)) s++;
-      if(/[0-9]/.test(p)) s++;
-      if(/[^A-Za-z0-9]/.test(p)) s++;
-      return s<=1?'ضعيف':(s===2?'متوسط':'قوي');
-    };
-
-    const updateSmartSummary=()=>{
-      const s=ensureStore(activeInvId);
-      const list=applySearch(s.inventory);
-      const last=s.currentAccount;
-      const tabName=(activeInvId==='main')?'الرئيسي':invName(activeInvId);
-      const now = (()=>{ try{return new Date().toLocaleDateString('ar-IQ');}catch{return new Date().toLocaleDateString();} })();
-      smartSummary.textContent =
-        `التبويب: ${tabName} — التاريخ: ${now} — المتاح (حسب البحث): ${list.length} — ` +
-        `المسحوب: ${s.pulledCounter} — ` +
-        (last ? `آخر حساب: ${last.email} (قوة الباسورد: ${strength(last.password)})` : 'لا يوجد حساب مسحوب حالياً');
-    };
-
-    const renderTabs=()=>{
-      tabsWrap.innerHTML='';
-      (config.inventories||[]).forEach(inv=>{
-        const btn=document.createElement('button');
-        btn.className=`press soft px-4 py-2 rounded-2xl text-sm font-bold border ${inv.id===activeInvId?'border-blue-400/50 bg-blue-500/10 shadow-[0_0_0_3px_rgba(59,130,246,.12)]':'border-slate-600/40 bg-slate-950/30'}`;
-        const icon = inv.id==='main'?'fa-layer-group text-blue-300' : inv.id==='gemini'?'fa-wand-magic-sparkles text-purple-300' : inv.id==='go'?'fa-robot text-emerald-300' : 'fa-layer-group text-amber-300';
-        btn.innerHTML=`<i class="fa-solid ${icon} ml-2"></i>${invName(inv.id)}`;
-        btn.onclick=()=>setActive(inv.id);
-        tabsWrap.appendChild(btn);
-      });
-    };
-
-    const renderMoveButtons=()=>{
-      moveTargetsEl.innerHTML='';
-      moveTargetsEl.classList.add('hidden');
-      const rules=config.moveRules||{};
-      const targets=Array.isArray(rules[activeInvId])?rules[activeInvId]:[];
-      const valid=targets.filter(t=>t!==activeInvId && (config.inventories||[]).some(i=>i.id===t));
-      if(!valid.length){ moveBtn.style.opacity='0.5'; moveBtn.style.pointerEvents='none'; return; }
-      moveBtn.style.opacity='1'; moveBtn.style.pointerEvents='';
-      valid.forEach(t=>{
-        const b=document.createElement('button');
-        b.className="press soft bg-purple-700/18 hover:bg-purple-700/25 border border-purple-700/25 text-purple-100 font-bold py-2 px-4 rounded-2xl text-sm";
-        b.textContent = (activeInvId==='go' && t==='main') ? 'استرجاع للرئيسي' : `نقل إلى ${invName(t)}`;
-        b.onclick=()=>moveCurrentTo(t);
-        moveTargetsEl.appendChild(b);
-      });
-    };
-
-    const updateUI=()=>{
-      const s=ensureStore(activeInvId);
-      const filtered=applySearch(s.inventory);
-      stockCountEl.textContent=filtered.length;
-      pulledCountEl.textContent=s.pulledCounter;
-      setStockColor(filtered.length);
-      updateTitle();
-      renderTabs();
-      renderMoveButtons();
-      if(config.ui.smart) updateSmartSummary();
-      if(s.currentAccount) displayResult(s.currentAccount); else resultAreaEl.classList.add('hidden');
-    };
-
-    const setActive=(id)=>{
-      activeInvId=id;
-      if(!store[id]) loadInv(id);
-      updateUI();
-      showToast(`تم التبديل إلى: ${invName(id)}`,'info');
-    };
-
-    // Parsing
-    const parseStandard=(line)=>{
-      const parts=line.split(';').map(x=>x.trim());
-      if(parts.length<2) return null;
-      const [email,password]=parts;
-      const recovery=parts[2]||'غير متوفر';
-      const url=parts[3]||'#';
-      if(!email || !password || !email.includes('@')) return null;
-      return {email,password,recovery,url};
-    };
-    const parseQuick=(line)=>{
-      const m=line.match(/^([^\s@]+@[^\s@]+\.[^\s@]+)(.+)$/);
-      if(!m) return null;
-      const email=(m[1]||'').trim(), password=(m[2]||'').trim();
-      if(!email || !password) return null;
-      return {email,password,recovery:'غير متوفر',url:'#'};
-    };
-
-    const addTextToStock=(text)=>{
-      const s=ensureStore(activeInvId);
-      text=String(text||'').replace(/\u0000/g,'').replace(/^\uFEFF/,'');
-      const lines=text.replace(/\r/g,'').split('\n').map(x=>x.trim()).filter(Boolean);
-
-      let added=0, dup=0, bad=0, header=0;
-      const exists=(email)=>s.inventory.some(a=>a.email===email);
-
-      for(const raw of lines){
-        const low=raw.toLowerCase();
-        if(raw.startsWith('{') || low.includes('{login}') || low.includes('login};{password') || low.includes('email;pass;') || low.includes('email;password')){
-          header++; continue;
-        }
-        let acc=null;
-        if(raw.includes(';')) acc=parseStandard(raw);
-        else if(raw.includes(',')) acc=parseStandard(raw.replace(/,/g,';'));
-        else acc=parseQuick(raw);
-
-        if(!acc){ bad++; continue; }
-        if(exists(acc.email)){ dup++; continue; }
-        s.inventory.push(acc); added++;
-      }
-
-      saveInv(activeInvId);
-      updateUI();
-
-      if(!added && (bad||header)) showToast(`لم يتم إضافة شيء. (هيدر: ${header} | غير صالح: ${bad})`,'error');
-      else{
-        let msg=`تمت إضافة ${added} حساب`;
-        if(header) msg+=` (تجاهل هيدر: ${header})`;
-        if(dup) msg+=` (مكرر: ${dup})`;
-        if(bad) msg+=` (غير صالح: ${bad})`;
-        showToast(msg, added?'success':'error');
-      }
-    };
-
-    const addToStock=()=>{
-      flash(addBtn);
-      const a=bulkInputEl.value||'', b=quickInputEl.value||'';
-      if(!a.trim() && !b.trim()) return showToast('الحقول فارغة!','error');
-      addTextToStock((a?a+'\n':'')+(b?b+'\n':''));
-      bulkInputEl.value=''; quickInputEl.value='';
-    };
-
-    const pullAccount=()=>{
-      flash(pullBtn);
-      const s=ensureStore(activeInvId);
-      const filtered=applySearch(s.inventory);
-      if(!filtered.length) return showToast('المخزون فارغ (أو لا يوجد نتيجة للبحث).','error');
-
-      let idx=0;
-      if((searchInputEl.value||'').trim()){
-        const first=filtered[0].email;
-        idx=s.inventory.findIndex(a=>a.email===first);
-        if(idx<0) idx=0;
-      }
-
-      const acc=s.inventory.splice(idx,1)[0];
-      s.currentAccount=acc;
-      s.pulledCounter++;
-      setUndo(activeInvId,{acc,idx,time:Date.now()});
-      saveInv(activeInvId);
-      displayResult(acc);
-      updateUI();
-      showToast('تم سحب الحساب بنجاح','success');
-    };
-
-    const undoLastPull=()=>{
-      flash(undoPullBtn);
-      const u=getUndo(activeInvId);
-      if(!u||!u.acc) return showToast('لا يوجد عملية سحب للتراجع عنها.','error');
-      const s=ensureStore(activeInvId);
-      const idx=Number.isFinite(u.idx)?Math.max(0,Math.min(u.idx,s.inventory.length)):0;
-      if(!s.inventory.some(a=>a.email===u.acc.email)) s.inventory.splice(idx,0,u.acc);
-      if(s.pulledCounter>0) s.pulledCounter--;
-      s.currentAccount=null;
-      clearLast(activeInvId);
-      setUndo(activeInvId,null);
-      saveInv(activeInvId);
-      updateUI();
-      showToast('تم التراجع عن آخر سحب','success');
-    };
-
-    const clearStorage=()=>{
-      flash(clearBtn);
-      if(!confirm(`هل أنت متأكد من حذف مخزون (${invName(activeInvId)}) بالكامل؟`)) return;
-      const s=ensureStore(activeInvId);
-      s.inventory=[]; s.pulledCounter=0; s.currentAccount=null;
-      const k=keysFor(activeInvId);
-      Object.values(k).forEach(x=>localStorage.removeItem(x));
-      updateUI();
-      showToast('تم تصفير المخزون','success');
-    };
-
-    const copyField= async (type)=>{
-      const s=ensureStore(activeInvId), acc=s.currentAccount;
-      if(!acc) return showToast('لا يوجد حساب مسحوب للنسخ.','error');
-      const map={ email:['الإيميل',acc.email], password:['الباسورد',acc.password], recovery:['التحقق',acc.recovery] };
-      const [label,val]=map[type]||['', ''];
-      const ok=await copyText(String(val||''));
-      showToast(ok?`تم نسخ ${label}`:'فشل النسخ', ok?'copy':'error');
-    };
-
-    const copyFull= async ()=>{
-      flash(copyFullBtn);
-      const s=ensureStore(activeInvId), acc=s.currentAccount;
-      if(!acc) return showToast('لا يوجد حساب مسحوب.','error');
-      const t=`الايميل: ${acc.email}\nالباسورد: ${acc.password}\nالتحقق: ${acc.recovery}\nرابط الرسائل: ${acc.url||"#"}`;
-      const ok=await copyText(t);
-      showToast(ok?'تم نسخ المعلومات كاملة':'فشل النسخ', ok?'success':'error');
-    };
-
-    const copyEP= async ()=>{
-      flash(copyEPBtn);
-      const s=ensureStore(activeInvId), acc=s.currentAccount;
-      if(!acc) return showToast('لا يوجد حساب مسحوب.','error');
-      const t=`${serviceLabel(activeInvId)}\n\nالايميل: ${acc.email}\nالباسورد: ${acc.password}\n`;
-      const ok=await copyText(t);
-      showToast(ok?'تم نسخ Email + Pass':'فشل النسخ', ok?'copy':'error');
-    };
-
-    const copyCompact= async ()=>{
-      flash(copyCompactBtn);
-      const s=ensureStore(activeInvId), acc=s.currentAccount;
-      if(!acc) return showToast('لا يوجد حساب مسحوب.','error');
-      const line=`${acc.email};${acc.password};${acc.recovery||'غير متوفر'};${acc.url||'#'}`;
-      const ok=await copyText(line);
-      showToast(ok?'تم نسخ آخر حساب (سطر واحد)':'فشل النسخ', ok?'copy':'error');
-    };
-
-    const restoreLastPulled=()=>{
-      flash(restoreBtn);
-      const s=ensureStore(activeInvId), acc=s.currentAccount;
-      if(!acc) return showToast('لا يوجد حساب مسحوب للاسترجاع.','error');
-      if(!s.inventory.some(a=>a.email===acc.email)) s.inventory.unshift(acc);
-      if(s.pulledCounter>0) s.pulledCounter--;
-      s.currentAccount=null;
-      clearLast(activeInvId);
-      saveInv(activeInvId);
-      updateUI();
-      showToast('تم استرجاع الحساب إلى المخزون','success');
-    };
-
-    const deleteLastPulled=()=>{
-      flash(deleteLastBtn);
-      const s=ensureStore(activeInvId);
-      if(!s.currentAccount) return showToast('لا يوجد حساب مسحوب.','error');
-      s.currentAccount=null;
-      clearLast(activeInvId);
-      saveInv(activeInvId);
-      resultAreaEl.classList.add('hidden');
-      showToast('تم حذف الحساب من الشاشة','success');
-    };
-
-    const moveCurrentTo=(target)=>{
-      const sFrom=ensureStore(activeInvId), acc=sFrom.currentAccount;
-      if(!acc) return showToast('لا يوجد حساب مسحوب للنقل.','error');
-
-      const allowed=(config.moveRules && Array.isArray(config.moveRules[activeInvId]))?config.moveRules[activeInvId]:[];
-      if(!allowed.includes(target)) return showToast('النقل غير مسموح حسب القواعد.','error');
-
-      loadInv(target);
-      const sTo=ensureStore(target);
-      if(sTo.inventory.some(a=>a.email===acc.email)) return showToast(`هذا الحساب موجود بالفعل في ${invName(target)}.`,'error');
-
-      sTo.inventory.unshift(acc);
-      saveInv(target);
-      sFrom.currentAccount=null;
-      clearLast(activeInvId);
-      saveInv(activeInvId);
-      updateUI();
-      showToast(`تم نقل الحساب إلى ${invName(target)}`,'success');
-    };
-
-    // TXT import/export
-    const readFileText = (file)=> new Promise((res,rej)=>{
-      const fr=new FileReader();
-      fr.onerror=()=>rej(fr.error||new Error('FileReader error'));
-      fr.onload=()=>{
-        try{
-          const u8=new Uint8Array(fr.result);
-          const tryDec=(enc)=>{ try{ return new TextDecoder(enc,{fatal:false}).decode(u8); }catch{return null;} };
-          const tries=[tryDec('utf-8'),tryDec('utf-16le'),tryDec('utf-16be'),tryDec('windows-1256'),tryDec('iso-8859-1')].filter(Boolean);
-          const score=(s)=>{ const rep=(s.match(/\uFFFD/g)||[]).length; return s.trim().length - rep*2; };
-          let best=tries[0]||'';
-          for(const t of tries) if(score(t)>score(best)) best=t;
-          best=String(best||'').replace(/\u0000/g,'').replace(/^\uFEFF/,'');
-          res(best);
-        }catch(e){ rej(e); }
+      // Storage Keys (مخزونين منفصلين)
+      const STORAGE_KEYS = {
+        main:   { data:'smartInventory_data',   pulled:'smartInventory_pulled',   last:'smartInventory_lastPulled',   undo:'smartInventory_undo' },
+        gemini: { data:'smartGemini_data',      pulled:'smartGemini_pulled',      last:'smartGemini_lastPulled',      undo:'smartGemini_undo' }
       };
-      fr.readAsArrayBuffer(file);
-    });
 
-    const importTxtFile= async (file)=>{
-      if(!file) return showToast('ما تم اختيار ملف.','error');
-      if(!file.size) return showToast('الملف فارغ.','error');
-      try{
-        const content=await readFileText(file);
-        if(!content.trim()) return showToast('تمت القراءة لكن المحتوى فارغ.','error');
-        addTextToStock(content);
-      }catch(e){
-        console.error(e);
-        showToast('فشل قراءة الملف من المتصفح.','error');
+      // Data for both tabs
+      let store = {
+        main:   { inventory: [], pulledCounter: 0, currentAccount: null },
+        gemini: { inventory: [], pulledCounter: 0, currentAccount: null }
+      };
+
+      // Utils
+      function safeJsonParse(value, fallback) { try { return JSON.parse(value); } catch { return fallback; } }
+
+      function flash(el){
+        if(!el) return;
+        el.classList.remove('flash');
+        void el.offsetWidth;
+        el.classList.add('flash');
+        setTimeout(()=> el.classList.remove('flash'), 260);
       }
-    };
 
-    const downloadTxt=(list,filename)=>{
-      const content=list.map(a=>`${a.email};${a.password};${a.recovery};${a.url}`).join('\n');
-      const blob=new Blob([content],{type:'text/plain;charset=utf-8'});
-      const url=URL.createObjectURL(blob);
-      const a=document.createElement('a');
-      a.href=url; a.download=filename;
-      document.body.appendChild(a); a.click(); a.remove();
-      URL.revokeObjectURL(url);
-    };
+      function showToast(message, type = 'info') {
+        toastMsg.textContent = message;
 
-    const exportFiltered=()=>{
-      flash(exportBtn);
-      const s=ensureStore(activeInvId);
-      const list=applySearch(s.inventory);
-      if(!list.length) return showToast('المخزون فارغ (أو لا يوجد نتيجة للبحث).','error');
-      downloadTxt(list, `${activeInvId}_filtered_${new Date().toISOString().slice(0,10)}.txt`);
-      showToast(`تم تصدير ${list.length} حساب (حسب البحث)`,'success');
-    };
+        toast.className =
+          "fixed bottom-5 left-5 px-5 py-3 rounded-2xl shadow-2xl transform transition-all duration-300 z-50 flex items-center gap-3 font-bold border";
 
-    const exportAll=()=>{
-      flash(exportRemainingBtn);
-      const s=ensureStore(activeInvId);
-      if(!s.inventory.length) return showToast('لا يوجد متبقي للتصدير.','error');
-      downloadTxt(s.inventory, `${activeInvId}_remaining_${new Date().toISOString().slice(0,10)}.txt`);
-      showToast(`تم تصدير المتبقي بالكامل: ${s.inventory.length}`,'success');
-    };
+        if (type === 'success') {
+          toast.classList.add('bg-emerald-950/80', 'border-emerald-800/60', 'text-emerald-100');
+          toastIcon.className = "fa-solid fa-circle-check text-emerald-300";
+        } else if (type === 'error') {
+          toast.classList.add('bg-red-950/80', 'border-red-800/60', 'text-red-100');
+          toastIcon.className = "fa-solid fa-triangle-exclamation text-red-300";
+        } else if (type === 'copy') {
+          toast.classList.add('bg-blue-950/80', 'border-blue-800/60', 'text-blue-100');
+          toastIcon.className = "fa-solid fa-copy text-blue-300";
+        } else {
+          toast.classList.add('bg-slate-900/90', 'border-slate-700/70', 'text-white');
+          toastIcon.className = "fa-solid fa-info-circle text-slate-200";
+        }
 
-    // Links + Settings (مختصر)
-    const settingsModal=$('settingsModal'), settingsBtn=$('settingsBtn'), closeSettingsBtn=$('closeSettingsBtn');
-    const invList=$('invList'), newInvName=$('newInvName'), addInvBtn=$('addInvBtn'), resetRulesBtn=$('resetRulesBtn');
-    const linkName=$('linkName'), linkUrl=$('linkUrl'), addLinkBtn=$('addLinkBtn'), linksList=$('linksList');
-    const maxLinksInput=$('maxLinksInput'), saveMaxLinksBtn=$('saveMaxLinksBtn');
-    const toggleSnow=$('toggleSnow'), toggleSmart=$('toggleSmart'), toggleFeed=$('toggleFeed'), saveSettingsBtn=$('saveSettingsBtn'), resetAllBtn=$('resetAllBtn');
-
-    const renderHomeLinks=()=>{
-      homeLinksEl.innerHTML='';
-      const links=config.links||[];
-      if(!links.length){ homeLinksEl.classList.add('hidden'); return; }
-      homeLinksEl.classList.remove('hidden');
-      links.forEach(l=>{
-        const a=document.createElement('a');
-        a.href=l.url; a.target="_blank"; a.rel="noopener";
-        a.className="press soft px-3 py-2 rounded-2xl text-sm font-bold border border-slate-600/40 bg-slate-950/30 break-any";
-        a.textContent=l.name;
-        homeLinksEl.appendChild(a);
-      });
-    };
-
-    const renderLinksList=()=>{
-      linksList.innerHTML='';
-      const links=config.links||[];
-      if(!links.length){
-        const d=document.createElement('div');
-        d.className="text-[12px] glow"; d.textContent="لا توجد روابط حالياً.";
-        linksList.appendChild(d); return;
+        toast.classList.remove('translate-y-20', 'opacity-0');
+        clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 2300);
       }
-      links.forEach((l,idx)=>{
-        const row=document.createElement('div');
-        row.className="flex items-center justify-between gap-2 bg-slate-950/20 border border-slate-700/40 rounded-2xl px-3 py-2";
-        row.innerHTML=`
-          <div class="min-w-0 break-any">
-            <div class="font-bold text-white text-sm">${l.name}</div>
-            <div class="text-[11px] text-slate-400">${l.url}</div>
-          </div>
-          <button class="press soft bg-red-700/18 hover:bg-red-700/25 border border-red-700/25 text-red-100 font-bold px-3 py-2 rounded-2xl text-xs" data-del-link="${idx}">حذف</button>
-        `;
-        linksList.appendChild(row);
+
+      async function copyText(text) {
+        try {
+          if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(text);
+            return true;
+          }
+        } catch (_) {}
+
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.top = '-9999px';
+          ta.style.left = '-9999px';
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          const ok = document.execCommand('copy');
+          document.body.removeChild(ta);
+          return ok;
+        } catch (_) {
+          return false;
+        }
+      }
+
+      // Active data getters
+      function K(){ return STORAGE_KEYS[activeTab]; }
+      function S(){ return store[activeTab]; }
+
+      function saveActive() {
+        const keys = K();
+        const s = S();
+        localStorage.setItem(keys.data, JSON.stringify(s.inventory));
+        localStorage.setItem(keys.pulled, String(s.pulledCounter));
+        if (s.currentAccount) localStorage.setItem(keys.last, JSON.stringify(s.currentAccount));
+      }
+
+      function loadActive() {
+        const keys = K();
+        const data = localStorage.getItem(keys.data);
+        const pulled = localStorage.getItem(keys.pulled);
+        const s = S();
+        s.inventory = data ? safeJsonParse(data, []) : [];
+        s.pulledCounter = pulled ? Number(pulled) || 0 : 0;
+      }
+
+      function getLastPulled(tab) {
+        const keys = STORAGE_KEYS[tab];
+        const last = localStorage.getItem(keys.last);
+        return last ? safeJsonParse(last, null) : null;
+      }
+
+      function clearLastPulled(tab) {
+        const keys = STORAGE_KEYS[tab];
+        localStorage.removeItem(keys.last);
+      }
+
+      function setUndo(tab, obj){
+        const keys = STORAGE_KEYS[tab];
+        localStorage.setItem(keys.undo, JSON.stringify(obj || null));
+      }
+      function getUndo(tab){
+        const keys = STORAGE_KEYS[tab];
+        const v = localStorage.getItem(keys.undo);
+        return v ? safeJsonParse(v, null) : null;
+      }
+
+      function setStockCounterColor(stockLen) {
+        if (stockLen === 0) stockCountEl.className = "text-2xl font-extrabold text-red-400";
+        else if (stockLen < 5) stockCountEl.className = "text-2xl font-extrabold text-amber-300";
+        else stockCountEl.className = "text-2xl font-extrabold text-emerald-300";
+      }
+
+      function updateUI() {
+        const s = S();
+        const filtered = applySearch(s.inventory);
+        stockCountEl.textContent = filtered.length;
+        pulledCountEl.textContent = s.pulledCounter;
+        setStockCounterColor(filtered.length);
+
+        // إذا في حساب محفوظ آخر مرة
+        const last = s.currentAccount || getLastPulled(activeTab);
+        if (last) {
+          s.currentAccount = last;
+          displayResult(last);
+        } else {
+          resultAreaEl.classList.add('hidden');
+        }
+
+        updateSmartSummary();
+      }
+
+      function displayResult(acc) {
+        if (!acc) return;
+        resultAreaEl.classList.remove('hidden');
+        emailDisplayEl.textContent = acc.email || '---';
+        passDisplayEl.textContent = acc.password || '---';
+        recDisplayEl.textContent = acc.recovery || 'غير متوفر';
+        urlBtnEl.href = acc.url && acc.url !== '' ? acc.url : '#';
+
+        const now = new Date();
+        timestampEl.textContent = now.toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      }
+
+      // Parsing
+      function parseStandardLine(line) {
+        const parts = line.split(';').map(p => p.trim());
+        if (parts.length < 2) return { ok: false };
+        const email = parts[0];
+        const password = parts[1];
+        const recovery = parts[2] || "غير متوفر";
+        const url = parts[3] || "#";
+        if (!email || !password) return { ok: false };
+        return { ok: true, acc: { email, password, recovery, url } };
+      }
+
+      function parseQuickLine(line) {
+        const m = line.match(/^([^\s@]+@[^\s@]+\.[^\s@]+)(.+)$/);
+        if (!m) return { ok: false };
+        const email = (m[1] || '').trim();
+        const password = (m[2] || '').trim();
+        if (!email || !password) return { ok: false };
+        return { ok: true, acc: { email, password, recovery: "غير متوفر", url: "#" } };
+      }
+
+      // Search filter (ذكي وسريع)
+      function applySearch(list){
+        const q = (searchInputEl.value || '').trim().toLowerCase();
+        if (!q) return list;
+        return list.filter(a => String(a.email || '').toLowerCase().includes(q));
+      }
+
+      function addMixedToStock(standardText, quickText) {
+        const s = S();
+
+        const stdLines = (standardText || '')
+          .replace(/\r/g, '')
+          .split('\n')
+          .map(l => l.trim())
+          .filter(l => l.length >= 5);
+
+        const quickLines = (quickText || '')
+          .replace(/\r/g, '')
+          .split('\n')
+          .map(l => l.trim())
+          .filter(l => l.length >= 5);
+
+        let addedCount = 0;
+        let duplicateCount = 0;
+        let invalidCount = 0;
+
+        function existsEmail(email){
+          return s.inventory.some(a => a.email === email);
+        }
+
+        for (const line of stdLines) {
+          const parsed = parseStandardLine(line);
+          if (!parsed.ok) { invalidCount++; continue; }
+          const acc = parsed.acc;
+          if (existsEmail(acc.email)) { duplicateCount++; continue; }
+          s.inventory.push(acc); addedCount++;
+        }
+
+        for (const line of quickLines) {
+          if (line.includes(';')) { invalidCount++; continue; }
+          const parsed = parseQuickLine(line);
+          if (!parsed.ok) { invalidCount++; continue; }
+          const acc = parsed.acc;
+          if (existsEmail(acc.email)) { duplicateCount++; continue; }
+          s.inventory.push(acc); addedCount++;
+        }
+
+        saveActive();
+        updateUI();
+        return { addedCount, duplicateCount, invalidCount };
+      }
+
+      function addToStock() {
+        flash(addBtn);
+        const standard = bulkInputEl.value;
+        const quick = quickInputEl.value;
+
+        if (!standard.trim() && !quick.trim()) {
+          showToast('الحقول فارغة!', 'error');
+          return;
+        }
+
+        const { addedCount, duplicateCount, invalidCount } = addMixedToStock(standard, quick);
+
+        bulkInputEl.value = '';
+        quickInputEl.value = '';
+
+        let msg = `(${activeTab === TABS.MAIN ? 'الأساسي' : 'Gemini'}) تمت إضافة ${addedCount} حساب.`;
+        if (duplicateCount) msg += ` (مكرر: ${duplicateCount})`;
+        if (invalidCount) msg += ` (غير صالح: ${invalidCount})`;
+
+        showToast(msg, addedCount ? 'success' : 'error');
+      }
+
+      function pullAccount() {
+        flash(pullBtn);
+        const s = S();
+        const list = applySearch(s.inventory);
+
+        if (list.length === 0) {
+          showToast('المخزون فارغ (أو لا يوجد نتيجة للبحث).', 'error');
+          return;
+        }
+
+        // إذا في بحث، نسحب أول نتيجة بحث من المخزون الحقيقي
+        let idx = 0;
+        if ((searchInputEl.value || '').trim()) {
+          const firstEmail = list[0].email;
+          idx = s.inventory.findIndex(a => a.email === firstEmail);
+          if (idx < 0) idx = 0;
+        }
+
+        const acc = s.inventory.splice(idx, 1)[0];
+        s.currentAccount = acc;
+        s.pulledCounter++;
+
+        // Undo info
+        setUndo(activeTab, { acc, idx, time: Date.now() });
+
+        saveActive();
+        displayResult(acc);
+        updateUI();
+        showToast('تم سحب الحساب بنجاح', 'success');
+      }
+
+      function clearStorage() {
+        flash(clearBtn);
+        if (!confirm(`هل أنت متأكد من حذف مخزون (${activeTab === TABS.MAIN ? 'الأساسي' : 'Gemini'}) بالكامل؟`)) return;
+
+        const s = S();
+        s.inventory = [];
+        s.pulledCounter = 0;
+        s.currentAccount = null;
+
+        const keys = K();
+        localStorage.removeItem(keys.data);
+        localStorage.removeItem(keys.pulled);
+        localStorage.removeItem(keys.last);
+        localStorage.removeItem(keys.undo);
+
+        updateUI();
+        showToast('تم تصفير المخزون', 'success');
+      }
+
+      async function copyField(type) {
+        const s = S();
+        const acc = s.currentAccount || getLastPulled(activeTab);
+        if (!acc) {
+          showToast('لا يوجد حساب مسحوب للنسخ.', 'error');
+          return;
+        }
+
+        let text = '';
+        let label = '';
+        if (type === 'email') { text = acc.email; label = 'الإيميل'; }
+        else if (type === 'password') { text = acc.password; label = 'الباسورد'; }
+        else { text = acc.recovery; label = 'التحقق'; }
+
+        const ok = await copyText(String(text || ''));
+        showToast(ok ? `تم نسخ ${label}` : 'فشل النسخ (جرّب HTTPS أو localhost)', ok ? 'copy' : 'error');
+      }
+
+      async function copyFullCombo() {
+        flash(copyFullBtn);
+        const s = S();
+        const acc = s.currentAccount || getLastPulled(activeTab);
+        if (!acc) {
+          showToast('لا يوجد حساب مسحوب لنسخ المعلومات.', 'error');
+          return;
+        }
+
+        const textToCopy =
+          `الايميل: ${acc.email}\n` +
+          `الباسورد: ${acc.password}\n` +
+          `التحقق: ${acc.recovery}\n` +
+          `رابط الرسائل: ${acc.url || "#"}`;
+
+        const ok = await copyText(textToCopy);
+        showToast(ok ? 'تم نسخ المعلومات كاملة' : 'فشل النسخ (جرّب HTTPS أو localhost)', ok ? 'success' : 'error');
+      }
+
+      async function copyCompact() {
+        flash(copyCompactBtn);
+        const s = S();
+        const acc = s.currentAccount || getLastPulled(activeTab);
+        if (!acc) {
+          showToast('لا يوجد حساب مسحوب.', 'error');
+          return;
+        }
+        // سطر واحد (مفيد للّصق السريع)
+        const line = `${acc.email};${acc.password};${acc.recovery || 'غير متوفر'};${acc.url || '#'}`;
+        const ok = await copyText(line);
+        showToast(ok ? 'تم نسخ آخر حساب (سطر واحد)' : 'فشل النسخ', ok ? 'copy' : 'error');
+      }
+
+      function deleteLastPulled() {
+        flash(deleteLastBtn);
+        const s = S();
+        const acc = s.currentAccount || getLastPulled(activeTab);
+        if (!acc) { showToast('لا يوجد حساب مسحوب.', 'error'); return; }
+
+        s.currentAccount = null;
+        clearLastPulled(activeTab);
+        saveActive();
+        resultAreaEl.classList.add('hidden');
+        showToast('تم حذف الحساب من الشاشة', 'success');
+      }
+
+      function restoreLastPulled() {
+        flash(restoreBtn);
+        const s = S();
+        const acc = s.currentAccount || getLastPulled(activeTab);
+        if (!acc) { showToast('لا يوجد حساب مسحوب للاسترجاع.', 'error'); return; }
+
+        // يرجع أول المخزون
+        if (!s.inventory.some(a => a.email === acc.email)) {
+          s.inventory.unshift(acc);
+        }
+
+        if (s.pulledCounter > 0) s.pulledCounter--;
+        s.currentAccount = null;
+        clearLastPulled(activeTab);
+
+        saveActive();
+        updateUI();
+        showToast('تم استرجاع الحساب إلى المخزون', 'success');
+      }
+
+      function moveToGemini() {
+        flash(moveToGeminiBtn);
+
+        // النقل مطلوب من المخزون الأول إلى الثاني
+        if (activeTab !== TABS.MAIN) {
+          showToast('زر النقل يعمل من (الأساسي) إلى (Gemini).', 'error');
+          return;
+        }
+
+        const sMain = store.main;
+        const acc = sMain.currentAccount || getLastPulled(TABS.MAIN);
+        if (!acc) { showToast('لا يوجد حساب مسحوب للنقل.', 'error'); return; }
+
+        const sGem = store.gemini;
+
+        // منع تكرار بالإيميل
+        if (sGem.inventory.some(a => a.email === acc.email)) {
+          showToast('هذا الحساب موجود بالفعل في مخزون Gemini (تم منع التكرار).', 'error');
+          return;
+        }
+
+        // أضفه إلى Gemini (أول المخزون)
+        sGem.inventory.unshift(acc);
+
+        // احفظ Gemini
+        localStorage.setItem(STORAGE_KEYS.gemini.data, JSON.stringify(sGem.inventory));
+
+        // احذف من شاشة الأساسي (حتى يصير "نقل" فعلي)
+        sMain.currentAccount = null;
+        clearLastPulled(TABS.MAIN);
+        localStorage.setItem(STORAGE_KEYS.main.data, JSON.stringify(sMain.inventory));
+        localStorage.setItem(STORAGE_KEYS.main.pulled, String(sMain.pulledCounter));
+
+        updateUI();
+        showToast('تم نقل الحساب إلى مخزون Gemini', 'success');
+      }
+
+      function undoLastPull() {
+        flash(undoPullBtn);
+        const undo = getUndo(activeTab);
+        if (!undo || !undo.acc) {
+          showToast('لا يوجد عملية سحب للتراجع عنها.', 'error');
+          return;
+        }
+
+        const s = S();
+        // رجع الحساب لمكانه إن أمكن، وإلا بداية المخزون
+        const idx = Number.isFinite(undo.idx) ? Math.max(0, Math.min(undo.idx, s.inventory.length)) : 0;
+        if (!s.inventory.some(a => a.email === undo.acc.email)) {
+          s.inventory.splice(idx, 0, undo.acc);
+        }
+        if (s.pulledCounter > 0) s.pulledCounter--;
+
+        // امسح الشاشة والـ last
+        s.currentAccount = null;
+        clearLastPulled(activeTab);
+        setUndo(activeTab, null);
+
+        saveActive();
+        updateUI();
+        showToast('تم التراجع عن آخر سحب', 'success');
+      }
+
+      async function importTxtFile(file) {
+        if (!file) return;
+        flash(importBtn);
+
+        if (!file.name.toLowerCase().endsWith('.txt')) {
+          showToast('الرجاء اختيار ملف TXT فقط', 'error');
+          return;
+        }
+
+        try {
+          const content = await file.text();
+          const { addedCount, duplicateCount, invalidCount } = addMixedToStock(content, '');
+
+          let msg = `تم استيراد الملف: +${addedCount}`;
+          if (duplicateCount) msg += ` (مكرر: ${duplicateCount})`;
+          if (invalidCount) msg += ` (غير صالح: ${invalidCount})`;
+
+          showToast(msg, addedCount ? 'success' : 'error');
+        } catch (e) {
+          showToast('فشل قراءة الملف', 'error');
+        }
+      }
+
+      function exportStockToTxt() {
+        flash(exportBtn);
+        const s = S();
+
+        const list = applySearch(s.inventory);
+        if (!list.length) {
+          showToast('المخزون فارغ (أو لا يوجد نتيجة للبحث).', 'error');
+          return;
+        }
+
+        const content = list
+          .map(acc => `${acc.email};${acc.password};${acc.recovery};${acc.url}`)
+          .join('\n');
+
+        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${activeTab === TABS.MAIN ? 'inventory' : 'gemini'}_${new Date().toISOString().slice(0,10)}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        URL.revokeObjectURL(url);
+        showToast(`تم تصدير ${list.length} حساب`, 'success');
+      }
+
+      function updateSmartSummary(){
+        const s = S();
+        const list = applySearch(s.inventory);
+        const last = s.currentAccount || getLastPulled(activeTab);
+
+        // تقدير سريع "قوة كلمة المرور" (بس للعرض)
+        function strength(p){
+          if(!p) return 'غير معروف';
+          let score = 0;
+          if(p.length >= 10) score++;
+          if(/[A-Z]/.test(p)) score++;
+          if(/[0-9]/.test(p)) score++;
+          if(/[^A-Za-z0-9]/.test(p)) score++;
+          if(score <= 1) return 'ضعيف';
+          if(score === 2) return 'متوسط';
+          return 'قوي';
+        }
+
+        const tabName = activeTab === TABS.MAIN ? 'الأساسي' : 'Gemini';
+        const now = new Date().toLocaleDateString('ar-IQ');
+
+        smartSummary.textContent =
+          `التبويب: ${tabName} — التاريخ: ${now} — المتاح (حسب البحث): ${list.length} — `
+          + `المسحوب: ${s.pulledCounter} — `
+          + (last ? `آخر حساب: ${last.email} (قوة الباسورد: ${strength(last.password)})` : 'لا يوجد حساب مسحوب حالياً');
+      }
+
+      function toggleSmartPanel(){
+        flash(smartStatsBtn);
+        smartPanel.classList.toggle('hidden');
+        updateSmartSummary();
+      }
+
+      function setActiveTab(tab){
+        activeTab = tab;
+
+        // UI
+        tabMain.classList.toggle('tab-active', tab === TABS.MAIN);
+        tabGemini.classList.toggle('tab-active', tab === TABS.GEMINI);
+
+        titleNameEl.textContent = tab === TABS.MAIN ? 'المخزون الذكي' : 'المخزون الذكي — Gemini';
+
+        // زر النقل يظهر فقط في الأساسي
+        moveToGeminiBtn.style.display = (tab === TABS.MAIN) ? '' : 'none';
+
+        // load & show
+        loadActive();
+
+        const s = S();
+        const last = getLastPulled(activeTab);
+        if (last) s.currentAccount = last;
+
+        updateUI();
+        showToast(`تم التبديل إلى: ${tab === TABS.MAIN ? 'الأساسي' : 'Gemini'}`, 'info');
+      }
+
+      // Events
+      toggleBtn.addEventListener('click', () => { flash(toggleBtn); inputSectionEl.classList.toggle('hidden'); });
+      clearBtn.addEventListener('click', clearStorage);
+      addBtn.addEventListener('click', addToStock);
+      pullBtn.addEventListener('click', pullAccount);
+      copyFullBtn.addEventListener('click', copyFullCombo);
+
+      restoreBtn.addEventListener('click', restoreLastPulled);
+      deleteLastBtn.addEventListener('click', deleteLastPulled);
+      moveToGeminiBtn.addEventListener('click', moveToGemini);
+
+      importBtn.addEventListener('click', () => { flash(importBtn); importFile.click(); });
+      importFile.addEventListener('change', async () => {
+        const file = importFile.files && importFile.files[0] ? importFile.files[0] : null;
+        await importTxtFile(file);
+        importFile.value = '';
       });
-      linksList.querySelectorAll('[data-del-link]').forEach(btn=>{
-        btn.onclick=()=>{
-          const i=Number(btn.getAttribute('data-del-link'));
-          config.links.splice(i,1);
-          saveConfig(); renderLinksList(); renderHomeLinks();
-          showToast('تم حذف الرابط','success');
-        };
+
+      exportBtn.addEventListener('click', exportStockToTxt);
+
+      document.querySelectorAll('[data-copy]').forEach(card => {
+        card.addEventListener('click', () => { flash(card); copyField(card.getAttribute('data-copy')); });
       });
-    };
 
-    const addLink=()=>{
-      flash(addLinkBtn);
-      const name=(linkName.value||'').trim();
-      const url=(linkUrl.value||'').trim();
-      const max=Math.max(0,Math.floor(Number(config.maxLinks||0)));
-      if(!name || !url) return showToast('اكتب الاسم والرابط','error');
-      if(max===0) return showToast('الحد الأقصى حالياً 0. غيّره أولاً.','error');
-      if((config.links||[]).length>=max) return showToast(`وصلت للحد الأقصى (${max}).`,'error');
-      try{ new URL(url); }catch{ return showToast('الرابط غير صحيح','error'); }
-      config.links.push({name,url});
-      linkName.value=''; linkUrl.value='';
-      saveConfig(); renderLinksList(); renderHomeLinks();
-      showToast('تمت إضافة الرابط','success');
-    };
+      // Tabs
+      tabMain.addEventListener('click', () => setActiveTab(TABS.MAIN));
+      tabGemini.addEventListener('click', () => setActiveTab(TABS.GEMINI));
 
-    const saveMaxLinks=()=>{
-      flash(saveMaxLinksBtn);
-      const n=Math.max(0,Math.floor(Number(maxLinksInput.value||0)));
-      config.maxLinks=n;
-      if((config.links||[]).length>n) config.links=config.links.slice(0,n);
-      saveConfig(); renderLinksList(); renderHomeLinks();
-      showToast('تم حفظ الحد','success');
-    };
+      // Smart tools
+      smartStatsBtn.addEventListener('click', toggleSmartPanel);
+      clearSearchBtn.addEventListener('click', () => { flash(clearSearchBtn); searchInputEl.value=''; updateUI(); });
+      copyCompactBtn.addEventListener('click', copyCompact);
+      undoPullBtn.addEventListener('click', undoLastPull);
 
-    const slugify=(name)=>{
-      const base=(name||'').toLowerCase().trim().replace(/[\u0600-\u06FF]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
-      return base || ('inv-' + Math.random().toString(16).slice(2,8));
-    };
+      searchInputEl.addEventListener('input', () => updateUI());
 
-    const renderInvList=()=>{
-      invList.innerHTML='';
-      (config.inventories||[]).forEach(inv=>{
-        const row=document.createElement('div');
-        row.className="flex items-center justify-between gap-2 bg-slate-950/20 border border-slate-700/40 rounded-2xl px-3 py-2";
-        row.innerHTML=`
-          <div class="min-w-0 break-any">
-            <div class="font-bold text-white text-sm">${inv.id==='go'?'Go (يظهر: ChatGPT)':inv.name}</div>
-            <div class="text-[11px] text-slate-400 font-mono">id: ${inv.id}</div>
-          </div>
-          <div class="flex gap-2 shrink-0">
-            ${inv.locked?`<span class="text-[11px] glow">رئيسي</span>`:`<button class="press soft bg-red-700/18 hover:bg-red-700/25 border border-red-700/25 text-red-100 font-bold px-3 py-2 rounded-2xl text-xs" data-remove="${inv.id}">حذف</button>`}
-          </div>
-        `;
-        invList.appendChild(row);
+      // Initial load: حمّل الاثنين مرة حتى زر النقل يشتغل فوراً
+      function loadBothOnce(){
+        // MAIN
+        activeTab = TABS.MAIN;
+        loadActive();
+        let last = getLastPulled(TABS.MAIN);
+        if (last) store.main.currentAccount = last;
+
+        // GEMINI
+        activeTab = TABS.GEMINI;
+        loadActive();
+        last = getLastPulled(TABS.GEMINI);
+        if (last) store.gemini.currentAccount = last;
+
+        // رجّع للتبويب الأساسي
+        activeTab = TABS.MAIN;
+      }
+
+      window.addEventListener('load', () => {
+        loadBothOnce();
+        setActiveTab(TABS.MAIN);
       });
-      invList.querySelectorAll('[data-remove]').forEach(btn=>{
-        btn.onclick=()=>removeInventory(btn.getAttribute('data-remove'));
-      });
-    };
 
-    const addInventory=()=>{
-      flash(addInvBtn);
-      const name=(newInvName.value||'').trim();
-      if(!name) return showToast('اكتب اسم المخزون','error');
-      if(name.length>18) return showToast('الاسم طويل، خلي أقصر','error');
+      /* =========================
+         Snow (خفيف وشفاف وسريع)
+         ========================= */
+      const canvas = document.getElementById('snowCanvas');
+      const ctx = canvas.getContext('2d', { alpha: true });
+      let W = 0, H = 0;
 
-      const id=slugify(name);
-      if(config.inventories.some(x=>x.id===id)) return showToast('هذا الاسم/المعرف موجود. غيّر الاسم.','error');
+      function resize(){
+        W = canvas.width = window.innerWidth;
+        H = canvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resize, { passive:true });
+      resize();
 
-      config.inventories.push({id,name,locked:false});
-      const hasGo=config.inventories.some(x=>x.id==='go');
-      config.moveRules[id]=hasGo?['go']:['main'];
+      // عدد قليل حتى يبقى سلس
+      const flakes = Array.from({ length: 55 }, () => ({
+        x: Math.random()*W,
+        y: Math.random()*H,
+        r: 0.6 + Math.random()*1.6,
+        v: 0.25 + Math.random()*0.9,
+        drift: (Math.random()*0.6) - 0.3,
+        a: 0.12 + Math.random()*0.20
+      }));
 
-      saveConfig();
-      newInvName.value='';
-      loadInv(id);
-      renderTabs(); renderInvList(); renderMoveButtons();
-      showToast('تمت إضافة مخزون جديد','success');
-    };
-
-    const removeInventory=(id)=>{
-      const inv=config.inventories.find(x=>x.id===id);
-      if(!inv || inv.locked) return;
-      if(!confirm(`حذف مخزون (${invName(id)})؟ سيتم حذف بياناته أيضاً.`)) return;
-
-      config.inventories=config.inventories.filter(x=>x.id!==id);
-      for(const k in (config.moveRules||{})) config.moveRules[k]=(config.moveRules[k]||[]).filter(x=>x!==id);
-      delete config.moveRules[id];
-
-      const k=keysFor(id);
-      Object.values(k).forEach(x=>localStorage.removeItem(x));
-
-      if(activeInvId===id) activeInvId='main';
-      saveConfig();
-      setActive(activeInvId);
-      renderInvList();
-      showToast('تم حذف المخزون','success');
-    };
-
-    const resetMoveRules=()=>{
-      flash(resetRulesBtn);
-      config.moveRules=clone(defaultConfig.moveRules);
-      saveConfig();
-      renderInvList();
-      renderMoveButtons();
-      showToast('تمت إعادة قواعد النقل','success');
-    };
-
-    const applyUiToggles=()=>{
-      $('snowCanvas').style.display = config.ui.snow ? '' : 'none';
-      smartStatsBtn.style.display = config.ui.smart ? '' : 'none';
-      if(!config.ui.smart) smartPanel.classList.add('hidden');
-      const feedSection=inputSectionEl?.closest('section');
-      if(feedSection) feedSection.style.display = config.ui.feed ? '' : 'none';
-    };
-
-    const saveUiSettings=()=>{
-      flash(saveSettingsBtn);
-      config.ui.snow=!!toggleSnow.checked;
-      config.ui.smart=!!toggleSmart.checked;
-      config.ui.feed=!!toggleFeed.checked;
-      saveConfig();
-      applyUiToggles();
-      updateUI();
-      showToast('تم حفظ الإعدادات','success');
-    };
-
-    const resetAll=()=>{
-      flash(resetAllBtn);
-      if(!confirm('تصفير كل شيء؟ (كل المخزونات + الإعدادات)')) return;
-
-      const ids=new Set([...(config.inventories||[]).map(x=>x.id), ...(defaultConfig.inventories||[]).map(x=>x.id)]);
-      ids.forEach(id=>{
-        const k=keysFor(id);
-        Object.values(k).forEach(x=>localStorage.removeItem(x));
-      });
-      localStorage.removeItem(CONFIG_KEY);
-
-      config=clone(defaultConfig);
-      activeInvId='main';
-      for(const k in store) delete store[k];
-
-      loadAll();
-      renderTabs(); renderHomeLinks(); applyUiToggles();
-      setActive('main');
-      showToast('تم التصفير الكامل','success');
-    };
-
-    const openSettings=()=>{
-      flash(settingsBtn);
-      renderInvList(); renderLinksList();
-      maxLinksInput.value=String(config.maxLinks ?? 5);
-      toggleSnow.checked=!!config.ui.snow;
-      toggleSmart.checked=!!config.ui.smart;
-      toggleFeed.checked=!!config.ui.feed;
-      settingsModal.classList.add('open');
-      document.body.style.overflow='hidden';
-    };
-    const closeSettings=()=>{
-      flash(closeSettingsBtn);
-      settingsModal.classList.remove('open');
-      document.body.style.overflow='';
-    };
-
-    // Events
-    on(toggleBtn,'click',()=>{ flash(toggleBtn); inputSectionEl.classList.toggle('hidden'); });
-    on(clearBtn,'click',clearStorage);
-    on(addBtn,'click',addToStock);
-    on(pullBtn,'click',pullAccount);
-
-    on(smartStatsBtn,'click',()=>{ flash(smartStatsBtn); smartPanel.classList.toggle('hidden'); updateSmartSummary(); });
-    on(clearSearchBtn,'click',()=>{ flash(clearSearchBtn); searchInputEl.value=''; updateUI(); });
-    on(copyCompactBtn,'click',copyCompact);
-    on(undoPullBtn,'click',undoLastPull);
-    on(searchInputEl,'input',updateUI);
-
-    on(copyFullBtn,'click',copyFull);
-    on(copyEPBtn,'click',copyEP);
-
-    on(restoreBtn,'click',restoreLastPulled);
-    on(deleteLastBtn,'click',deleteLastPulled);
-
-    document.querySelectorAll('[data-copy]').forEach(card=> on(card,'click',()=>{ flash(card); copyField(card.getAttribute('data-copy')); }) );
-    on(moveBtn,'click',()=>{ flash(moveBtn); moveTargetsEl.classList.toggle('hidden'); });
-
-    on(importFile,'change', async ()=>{
-      const file=importFile.files && importFile.files[0] ? importFile.files[0] : null;
-      await importTxtFile(file);
-      importFile.value='';
-    });
-
-    on(exportBtn,'click',exportFiltered);
-    on(exportRemainingBtn,'click',exportAll);
-
-    // Settings events
-    on(settingsBtn,'click',openSettings);
-    on(closeSettingsBtn,'click',closeSettings);
-    on(settingsModal,'click',(e)=>{ if(e.target===settingsModal) closeSettings(); });
-
-    on(addInvBtn,'click',addInventory);
-    on(resetRulesBtn,'click',resetMoveRules);
-
-    on(addLinkBtn,'click',addLink);
-    on(saveMaxLinksBtn,'click',saveMaxLinks);
-
-    on(saveSettingsBtn,'click',saveUiSettings);
-    on(resetAllBtn,'click',resetAll);
-
-    const loadAll=()=> (config.inventories||[]).forEach(inv=>loadInv(inv.id));
-
-    // Init
-    window.addEventListener('load',()=>{
-      loadAll();
-      renderTabs();
-      renderHomeLinks();
-      applyUiToggles();
-      setActive('main');
-    });
-
-    // Snow (خفيف)
-    const canvas=$('snowCanvas'), ctx=canvas.getContext('2d',{alpha:true});
-    let W=0,H=0;
-    const resize=()=>{ W=canvas.width=innerWidth; H=canvas.height=innerHeight; };
-    on(window,'resize',resize,{passive:true}); resize();
-
-    const flakes=Array.from({length:50},()=>({ x:Math.random()*W,y:Math.random()*H,r:.6+Math.random()*1.6,v:.25+Math.random()*.9,dr:(Math.random()*.6)-.3,a:.12+Math.random()*.20 }));
-    (function tick(){
-      if(config.ui.snow){
+      function snowTick(){
         ctx.clearRect(0,0,W,H);
         for(const f of flakes){
-          f.y+=f.v; f.x+=f.dr;
-          if(f.y>H+5){ f.y=-5; f.x=Math.random()*W; }
-          if(f.x>W+5) f.x=-5;
-          if(f.x<-5) f.x=W+5;
-          ctx.beginPath(); ctx.arc(f.x,f.y,f.r,0,Math.PI*2);
-          ctx.fillStyle=`rgba(255,255,255,${f.a})`; ctx.fill();
-        }
-      }
-      requestAnimationFrame(tick);
-    })();
+          f.y += f.v;
+          f.x += f.drift;
 
-  })();
+          if (f.y > H + 5) { f.y = -5; f.x = Math.random()*W; }
+          if (f.x > W + 5) f.x = -5;
+          if (f.x < -5) f.x = W + 5;
+
+          ctx.beginPath();
+          ctx.arc(f.x, f.y, f.r, 0, Math.PI*2);
+          ctx.closePath();
+          // لون أبيض شفاف
+          ctx.fillStyle = `rgba(255,255,255,${f.a})`;
+          ctx.fill();
+        }
+        requestAnimationFrame(snowTick);
+      }
+      snowTick();
+
+    })();
   </script>
 </body>
 </html>
