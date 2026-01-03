@@ -1,0 +1,1399 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>مدير المخزون الذكي | Smart Inventory</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    body{
+      font-family:'Tajawal', sans-serif;
+      background:
+        radial-gradient(900px 500px at 15% -10%, rgba(59,130,246,.18), transparent 60%),
+        radial-gradient(800px 500px at 90% 10%, rgba(16,185,129,.12), transparent 55%),
+        #0b1224;
+      color:#e2e8f0;
+      overflow-x:hidden;
+    }
+
+    ::-webkit-scrollbar{ width:8px; }
+    ::-webkit-scrollbar-track{ background:#070c18; }
+    ::-webkit-scrollbar-thumb{ background:#3b82f6; border-radius:6px; }
+    ::-webkit-scrollbar-thumb:hover{ background:#2563eb; }
+
+    .glass-panel{
+      background: rgba(15,23,42,.55);
+      border: 1px solid rgba(148,163,184,.18);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .soft{ transition: background .14s ease, border-color .14s ease, box-shadow .14s ease, transform .06s ease; }
+    .press-glow:active{
+      box-shadow: 0 0 0 3px rgba(255,255,255,.07), 0 0 16px rgba(59,130,246,.18);
+      transform: translateY(1px);
+    }
+
+    .flash{ animation: flash .20s ease-out; }
+    @keyframes flash{
+      0%{ box-shadow: 0 0 0 rgba(255,255,255,0); }
+      100%{ box-shadow: 0 0 0 3px rgba(255,255,255,.08), 0 0 18px rgba(56,189,248,.18); }
+    }
+
+    .glow-text{
+      color:#cbd5e1;
+      text-shadow: 0 0 10px rgba(56,189,248,.16), 0 0 22px rgba(16,185,129,.10);
+    }
+
+    .field-copy{
+      cursor:pointer;
+      transition: background .14s ease, border-color .14s ease, box-shadow .14s ease;
+    }
+    .field-copy:hover{
+      background-color: rgba(51,65,85,.20);
+      border-color: rgba(59,130,246,.30);
+      box-shadow: 0 10px 22px rgba(0,0,0,.14);
+    }
+
+    .tab-pill{
+      border: 1px solid rgba(148,163,184,.18);
+      background: rgba(2,6,23,.40);
+    }
+    .tab-active{
+      border-color: rgba(59,130,246,.45);
+      background: rgba(59,130,246,.10);
+      box-shadow: 0 0 0 3px rgba(59,130,246,.10);
+    }
+
+    #snowCanvas{
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5;
+      opacity: .52;
+    }
+
+    /* ✅ اصلاح المودال: يبدأ من أعلى + عنوان ثابت */
+    .modal-backdrop{
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.55);
+      z-index: 60;
+      display: none;
+      align-items: flex-start; /* كان center */
+      justify-content: center;
+      padding: calc(12px + env(safe-area-inset-top)) 14px 14px 14px;
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .modal-backdrop.open{ display:flex; }
+
+    .modal-card{
+      width: 100%;
+      max-width: 980px;
+      max-height: calc(100vh - 28px - env(safe-area-inset-top));
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .modal-sticky-head{
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: rgba(15,23,42,.92);
+      border-bottom: 1px solid rgba(148,163,184,.18);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 18px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+    }
+
+    .break-any{ word-break: break-word; overflow-wrap: anywhere; }
+  </style>
+</head>
+
+<body class="min-h-screen flex flex-col items-center px-4 py-5">
+  <canvas id="snowCanvas"></canvas>
+
+  <header class="w-full max-w-5xl mb-4 relative z-10">
+    <div class="flex flex-col gap-3 glass-panel soft rounded-3xl p-4">
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-boxes-stacked text-blue-400"></i>
+            <h1 id="titleName" class="text-xl md:text-2xl font-extrabold text-blue-300 break-any">المخزون الرئيسي</h1>
+          </div>
+          <p id="hintText" class="text-[11px] glow-text mt-1">
+            كلشي خفيف وسلس ✨ — اضف روابطك من الإعدادات (ما يظهر شي إلا إذا تضيف).
+          </p>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <div id="homeLinks" class="hidden sm:flex items-center gap-2"></div>
+
+          <button id="settingsBtn" class="press-glow soft tab-pill px-3 py-2 rounded-2xl text-sm font-bold text-slate-100">
+            <i class="fa-solid fa-gear ml-2 text-slate-200"></i> إعدادات
+          </button>
+        </div>
+      </div>
+
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div class="flex flex-wrap gap-2" id="tabsBar"></div>
+
+        <div class="flex gap-2">
+          <div class="tab-pill soft px-4 py-2 rounded-2xl text-center">
+            <div class="text-[11px] text-slate-400">المتوفر</div>
+            <div id="stockCount" class="text-lg font-extrabold text-emerald-300">0</div>
+          </div>
+          <div class="tab-pill soft px-4 py-2 rounded-2xl text-center">
+            <div class="text-[11px] text-slate-400">تم سحبها</div>
+            <div id="pulledCount" class="text-lg font-extrabold text-purple-300">0</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="topTools" class="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+        <div id="searchWrap" class="relative flex-1">
+          <input id="searchInput" type="text"
+            class="w-full bg-slate-950/25 text-sm text-white px-4 py-3 rounded-2xl border border-slate-700/60 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15 outline-none transition placeholder-slate-500"
+            placeholder="بحث بالإيميل داخل المخزون..." />
+          <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
+        </div>
+
+        <div class="flex gap-2">
+          <button id="pullBtn"
+            class="press-glow soft bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-base font-extrabold px-5 py-3 rounded-2xl shadow-lg shadow-emerald-500/15">
+            <i class="fa-solid fa-hand-holding-hand ml-2"></i> سحب
+          </button>
+
+          <button id="toggleFeedBtn" class="press-glow soft tab-pill px-4 py-3 rounded-2xl text-sm font-bold text-slate-100">
+            <i class="fa-solid fa-cloud-arrow-up ml-2 text-blue-300"></i> تغذية
+          </button>
+
+          <button id="smartBtn" class="press-glow soft tab-pill px-4 py-3 rounded-2xl text-sm font-bold text-slate-100">
+            <i class="fa-solid fa-sparkles ml-2 text-amber-300"></i> ذكي
+          </button>
+        </div>
+      </div>
+
+      <div id="smartPanel" class="hidden bg-slate-950/18 border border-slate-700/35 rounded-2xl p-3">
+        <div class="flex flex-col md:flex-row gap-2 md:items-center md:justify-between">
+          <div class="text-xs glow-text break-any" id="smartSummary">---</div>
+          <div class="flex flex-wrap gap-2">
+            <button id="undoPullBtn" class="press-glow soft bg-slate-800/50 hover:bg-slate-700/55 border border-slate-700/60 text-white font-bold px-4 py-2 rounded-2xl text-sm">
+              <i class="fa-solid fa-rotate-left ml-2 text-amber-300"></i> تراجع
+            </button>
+            <button id="copyCompactBtn" class="press-glow soft bg-indigo-600/70 hover:bg-indigo-600 text-white font-bold px-4 py-2 rounded-2xl text-sm">
+              <i class="fa-solid fa-clipboard ml-2"></i> نسخ سطر
+            </button>
+            <button id="clearSearchBtn" class="press-glow soft bg-slate-800/50 hover:bg-slate-700/55 border border-slate-700/60 text-white font-bold px-4 py-2 rounded-2xl text-sm">
+              <i class="fa-solid fa-eraser ml-2"></i> مسح البحث
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="feedPanel" class="hidden bg-slate-950/18 border border-slate-700/35 rounded-2xl p-3 space-y-2">
+        <textarea id="bulkInput" rows="3"
+          class="w-full bg-slate-950/25 text-sm text-white p-3 rounded-2xl border border-slate-700/60 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15 outline-none transition placeholder-slate-500"
+          placeholder="التنسيق:
+email;pass;recovery;url"></textarea>
+
+        <textarea id="quickInput" rows="2"
+          class="w-full bg-slate-950/25 text-sm text-white p-3 rounded-2xl border border-slate-700/60 focus:border-amber-400 focus:ring-2 focus:ring-amber-400/15 outline-none transition placeholder-slate-500"
+          placeholder="تنسيق سريع (اختياري):
+email@gmail.comPASSWORD"></textarea>
+
+        <div class="flex flex-wrap gap-2 justify-between">
+          <div class="flex flex-wrap gap-2">
+            <button id="addBtn" class="press-glow soft bg-blue-600 hover:bg-blue-500 text-white font-extrabold px-5 py-2.5 rounded-2xl text-sm">
+              <i class="fa-solid fa-plus ml-2"></i> إضافة
+            </button>
+
+            <button id="importBtn" class="press-glow soft bg-slate-800/50 hover:bg-slate-700/55 border border-slate-700/60 text-white font-bold px-4 py-2.5 rounded-2xl text-sm">
+              <i class="fa-solid fa-file-arrow-up ml-2 text-blue-300"></i> TXT
+            </button>
+
+            <input id="importFile" type="file" accept="*/*" class="hidden" />
+
+            <button id="exportBtn" class="press-glow soft bg-slate-800/50 hover:bg-slate-700/55 border border-slate-700/60 text-white font-bold px-4 py-2.5 rounded-2xl text-sm">
+              <i class="fa-solid fa-file-arrow-down ml-2 text-emerald-300"></i> تصدير
+            </button>
+          </div>
+
+          <button id="clearBtn" class="press-glow soft text-red-200 hover:text-red-100 px-4 py-2.5 rounded-2xl border border-red-900/35 bg-red-950/15 hover:bg-red-950/22 text-sm font-bold">
+            <i class="fa-solid fa-trash ml-2"></i> تصفير
+          </button>
+        </div>
+
+        <p class="text-[11px] glow-text break-any">
+          ملاحظة: التصدير/السحب يتأثر بالبحث إذا كنت كاتب بحث.
+        </p>
+      </div>
+    </div>
+  </header>
+
+  <main class="w-full max-w-5xl relative z-10">
+    <section id="resultArea" class="hidden glass-panel soft rounded-3xl p-4 border border-slate-600/40">
+      <div class="flex items-center justify-between gap-2 mb-3">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-check-circle text-emerald-300"></i>
+          <span class="font-extrabold text-emerald-200">تم السحب</span>
+        </div>
+        <span class="text-[11px] text-slate-400 font-mono" id="timestamp"></span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <div class="press-glow field-copy soft bg-slate-950/20 p-3 rounded-2xl border border-slate-700/60" data-copy="email">
+          <div class="text-[11px] text-slate-400 mb-1">Email</div>
+          <div class="flex items-center justify-between gap-2">
+            <span id="emailDisplay" class="font-mono text-blue-300 break-any">---</span>
+            <i class="fa-regular fa-copy text-slate-500"></i>
+          </div>
+        </div>
+
+        <div class="press-glow field-copy soft bg-slate-950/20 p-3 rounded-2xl border border-slate-700/60" data-copy="password">
+          <div class="text-[11px] text-slate-400 mb-1">Password</div>
+          <div class="flex items-center justify-between gap-2">
+            <span id="passDisplay" class="font-mono text-rose-300 break-any">---</span>
+            <i class="fa-regular fa-copy text-slate-500"></i>
+          </div>
+        </div>
+
+        <div class="press-glow field-copy soft bg-slate-950/20 p-3 rounded-2xl border border-slate-700/60" data-copy="recovery">
+          <div class="text-[11px] text-slate-400 mb-1">Recovery</div>
+          <div class="flex items-center justify-between gap-2">
+            <span id="recDisplay" class="font-mono text-amber-300 break-any">---</span>
+            <i class="fa-regular fa-copy text-slate-500"></i>
+          </div>
+        </div>
+
+        <a id="urlBtn" href="#" target="_blank" rel="noopener"
+          class="press-glow soft bg-indigo-600/65 hover:bg-indigo-600 text-white p-3 rounded-2xl border border-indigo-400/20 flex items-center justify-between gap-2">
+          <div>
+            <div class="text-[11px] text-indigo-100/90">Webhook</div>
+            <div class="text-[11px] glow-text">فتح رابط الرسائل</div>
+          </div>
+          <i class="fa-solid fa-arrow-up-right-from-square"></i>
+        </a>
+      </div>
+
+      <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">
+        <button id="copyFullBtn"
+          class="press-glow soft w-full bg-slate-800/55 hover:bg-slate-700/60 border border-slate-700/60 text-white font-extrabold py-3 rounded-2xl flex items-center justify-center gap-2">
+          <i class="fa-solid fa-clipboard-list text-blue-300"></i>
+          <span>نسخ كامل</span>
+        </button>
+
+        <div class="grid grid-cols-4 gap-2">
+          <button id="copyEPBtn" class="press-glow soft bg-blue-700/18 hover:bg-blue-700/25 border border-blue-700/25 text-blue-100 font-bold py-3 rounded-2xl text-sm">
+            نسخ Email+Pass
+          </button>
+          <button id="restoreBtn" class="press-glow soft bg-emerald-700/25 hover:bg-emerald-700/32 border border-emerald-700/30 text-emerald-100 font-bold py-3 rounded-2xl text-sm">
+            استرجاع
+          </button>
+          <button id="deleteLastBtn" class="press-glow soft bg-red-700/18 hover:bg-red-700/25 border border-red-700/25 text-red-100 font-bold py-3 rounded-2xl text-sm">
+            حذف
+          </button>
+          <button id="moveBtn" class="press-glow soft bg-purple-700/20 hover:bg-purple-700/28 border border-purple-700/28 text-purple-100 font-bold py-3 rounded-2xl text-sm">
+            نقل
+          </button>
+        </div>
+      </div>
+
+      <div id="moveTargets" class="hidden mt-2 flex flex-wrap gap-2"></div>
+
+      <p class="mt-2 text-[11px] glow-text break-any">
+        ✅ آخر حساب مسحوب يبقى محفوظ حتى لو طلعت ورجعت.
+      </p>
+    </section>
+  </main>
+
+  <div id="toast"
+    class="fixed bottom-4 left-4 bg-slate-900/90 border border-slate-700/70 text-white px-4 py-2.5 rounded-2xl shadow-2xl transform translate-y-20 opacity-0 transition-all duration-300 z-[70] flex items-center gap-3">
+    <i id="toastIcon" class="fa-solid fa-info-circle"></i>
+    <span id="toastMsg" class="text-sm font-bold">تم</span>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settingsModal" class="modal-backdrop">
+    <div class="glass-panel soft modal-card rounded-3xl border border-slate-600/40 p-3">
+      <div class="modal-sticky-head">
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-gear text-slate-200"></i>
+            <span class="font-extrabold text-white">الإعدادات</span>
+            <span class="text-[11px] glow-text">تحكم كامل: مخزونات + روابط + عناصر مهمة</span>
+          </div>
+          <button id="closeSettingsBtn" class="press-glow soft tab-pill px-3 py-2 rounded-2xl text-sm font-bold">إغلاق</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div class="bg-slate-950/18 border border-slate-700/35 rounded-2xl p-3">
+          <div class="font-extrabold text-white mb-2">
+            <i class="fa-solid fa-layer-group ml-2 text-blue-300"></i> إدارة المخزونات
+          </div>
+
+          <div id="invList" class="space-y-2"></div>
+
+          <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-2">
+            <input id="newInvName" type="text"
+              class="bg-slate-950/25 text-sm text-white px-3 py-2 rounded-2xl border border-slate-700/60 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15 outline-none"
+              placeholder="اسم مخزون جديد (مثلاً: نَبيل)" />
+            <button id="addInvBtn" class="press-glow soft bg-blue-600 hover:bg-blue-500 text-white font-extrabold px-4 py-2 rounded-2xl text-sm">
+              إضافة مخزون
+            </button>
+            <button id="resetRulesBtn" class="press-glow soft bg-slate-800/50 hover:bg-slate-700/55 border border-slate-700/60 text-white font-bold px-4 py-2 rounded-2xl text-sm">
+              إعادة قواعد النقل
+            </button>
+          </div>
+
+          <p class="mt-2 text-[11px] glow-text break-any">
+            * يمكنك حذف أي مخزون (عدا الرئيسي). عند الحذف يتم حذف بياناته أيضاً.
+          </p>
+        </div>
+
+        <div class="bg-slate-950/18 border border-slate-700/35 rounded-2xl p-3">
+          <div class="font-extrabold text-white mb-2">
+            <i class="fa-solid fa-link ml-2 text-emerald-300"></i> روابط الصفحة الرئيسية
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2">
+            <input id="linkName" type="text"
+              class="bg-slate-950/25 text-sm text-white px-3 py-2 rounded-2xl border border-slate-700/60 outline-none"
+              placeholder="اسم الزر (مثلاً: نبيل)" />
+            <input id="linkUrl" type="url"
+              class="bg-slate-950/25 text-sm text-white px-3 py-2 rounded-2xl border border-slate-700/60 outline-none"
+              placeholder="الرابط (https://...)" />
+            <button id="addLinkBtn" class="press-glow soft bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold px-4 py-2 rounded-2xl text-sm">
+              إضافة رابط
+            </button>
+          </div>
+
+          <div class="flex items-center gap-2 mb-2">
+            <label class="text-xs text-slate-200">الحد الأقصى للروابط:</label>
+            <input id="maxLinksInput" type="number" min="0" step="1"
+              class="w-24 bg-slate-950/25 text-sm text-white px-3 py-2 rounded-2xl border border-slate-700/60 outline-none" />
+            <button id="saveMaxLinksBtn" class="press-glow soft bg-slate-800/50 hover:bg-slate-700/55 border border-slate-700/60 text-white font-bold px-4 py-2 rounded-2xl text-sm">
+              حفظ
+            </button>
+          </div>
+
+          <div id="linksList" class="space-y-2"></div>
+
+          <p class="mt-2 text-[11px] glow-text break-any">
+            * لن يظهر أي زر بالصفحة الرئيسية إلا إذا أضفت رابط من هنا.
+          </p>
+        </div>
+
+        <div class="bg-slate-950/18 border border-slate-700/35 rounded-2xl p-3 lg:col-span-2">
+          <div class="font-extrabold text-white mb-2">
+            <i class="fa-solid fa-sliders ml-2 text-purple-300"></i> عناصر مهمة (إظهار/إخفاء)
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+            <label class="flex items-center gap-2 bg-slate-950/20 border border-slate-700/40 rounded-2xl px-3 py-2">
+              <input id="toggleSnow" type="checkbox" class="accent-blue-500">
+              <span>ثلج خفيف</span>
+            </label>
+            <label class="flex items-center gap-2 bg-slate-950/20 border border-slate-700/40 rounded-2xl px-3 py-2">
+              <input id="toggleSmart" type="checkbox" class="accent-blue-500">
+              <span>زر/لوحة ذكي</span>
+            </label>
+            <label class="flex items-center gap-2 bg-slate-950/20 border border-slate-700/40 rounded-2xl px-3 py-2">
+              <input id="toggleFeed" type="checkbox" class="accent-blue-500">
+              <span>زر تغذية</span>
+            </label>
+            <label class="flex items-center gap-2 bg-slate-950/20 border border-slate-700/40 rounded-2xl px-3 py-2">
+              <input id="toggleSearch" type="checkbox" class="accent-blue-500">
+              <span>بحث</span>
+            </label>
+            <label class="flex items-center gap-2 bg-slate-950/20 border border-slate-700/40 rounded-2xl px-3 py-2">
+              <input id="toggleImportExport" type="checkbox" class="accent-blue-500">
+              <span>استيراد/تصدير</span>
+            </label>
+            <label class="flex items-center gap-2 bg-slate-950/20 border border-slate-700/40 rounded-2xl px-3 py-2">
+              <input id="toggleQuickInput" type="checkbox" class="accent-blue-500">
+              <span>خانة سريعة</span>
+            </label>
+          </div>
+
+          <div class="mt-3 flex flex-wrap gap-2 justify-between">
+            <button id="saveSettingsBtn" class="press-glow soft bg-purple-600 hover:bg-purple-500 text-white font-extrabold px-5 py-2.5 rounded-2xl text-sm">
+              حفظ الإعدادات
+            </button>
+            <button id="resetAllBtn" class="press-glow soft bg-red-700/18 hover:bg-red-700/25 border border-red-700/25 text-red-100 font-bold px-5 py-2.5 rounded-2xl text-sm">
+              تصفير كل شيء (جميع المخزونات)
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const $ = (id) => document.getElementById(id);
+      function flash(el){ if(!el) return; el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'), 260); }
+      function safeJsonParse(v, fb){ try { return JSON.parse(v); } catch { return fb; } }
+
+      const CONFIG_KEY = 'smartInventory_config_v4_final_import_fix2';
+
+      const defaultConfig = {
+        inventories: [
+          { id: 'main',   name: 'الرئيسي', locked: true },
+          { id: 'gemini', name: 'Gemini',  locked: false },
+          { id: 'go',     name: 'Go',      locked: false },
+        ],
+        moveRules: { main:['gemini','go'], gemini:['go'], go:['main','gemini'] },
+        links: [],
+        maxLinks: 5,
+        ui: { snow:true, smart:true, feed:true, search:true, importExport:true, quickInput:true }
+      };
+
+      function loadConfig(){
+        const v = localStorage.getItem(CONFIG_KEY);
+        const cfg = v ? safeJsonParse(v, null) : null;
+        if(!cfg) return structuredClone(defaultConfig);
+        const merged = structuredClone(defaultConfig);
+        Object.assign(merged, cfg);
+        merged.ui = Object.assign(structuredClone(defaultConfig.ui), cfg.ui || {});
+        merged.links = Array.isArray(cfg.links) ? cfg.links : [];
+        merged.inventories = Array.isArray(cfg.inventories) && cfg.inventories.length ? cfg.inventories : structuredClone(defaultConfig.inventories);
+        merged.moveRules = Object.assign(structuredClone(defaultConfig.moveRules), cfg.moveRules || {});
+        merged.maxLinks = Number.isFinite(cfg.maxLinks) ? cfg.maxLinks : defaultConfig.maxLinks;
+        return merged;
+      }
+      function saveConfig(){ localStorage.setItem(CONFIG_KEY, JSON.stringify(config)); }
+      let config = loadConfig();
+
+      function keysFor(invId){
+        const p = `smart_${invId}_`;
+        return { data: p+'data', pulled: p+'pulled', last: p+'last', undo: p+'undo' };
+      }
+
+      let activeInvId = 'main';
+      let store = {};
+      function ensureStore(invId){
+        if(!store[invId]) store[invId] = { inventory: [], pulledCounter: 0, currentAccount: null };
+        return store[invId];
+      }
+      function loadInv(invId){
+        const s = ensureStore(invId);
+        const k = keysFor(invId);
+        s.inventory = safeJsonParse(localStorage.getItem(k.data), []);
+        s.pulledCounter = Number(localStorage.getItem(k.pulled) || 0) || 0;
+        const last = safeJsonParse(localStorage.getItem(k.last), null);
+        if(last) s.currentAccount = last;
+      }
+      function saveInv(invId){
+        const s = ensureStore(invId);
+        const k = keysFor(invId);
+        localStorage.setItem(k.data, JSON.stringify(s.inventory));
+        localStorage.setItem(k.pulled, String(s.pulledCounter));
+        if (s.currentAccount) localStorage.setItem(k.last, JSON.stringify(s.currentAccount));
+      }
+      function setUndo(invId, obj){ localStorage.setItem(keysFor(invId).undo, JSON.stringify(obj || null)); }
+      function getUndo(invId){ return safeJsonParse(localStorage.getItem(keysFor(invId).undo), null); }
+      function clearLast(invId){ localStorage.removeItem(keysFor(invId).last); }
+
+      // DOM
+      const tabsBar = $('tabsBar');
+      const homeLinksEl = $('homeLinks');
+      const titleNameEl = $('titleName');
+      const stockCountEl = $('stockCount');
+      const pulledCountEl = $('pulledCount');
+
+      const searchWrap = $('searchWrap');
+      const searchInputEl = $('searchInput');
+
+      const pullBtn = $('pullBtn');
+      const toggleFeedBtn = $('toggleFeedBtn');
+      const smartBtn = $('smartBtn');
+
+      const feedPanel = $('feedPanel');
+      const smartPanel = $('smartPanel');
+
+      const bulkInputEl = $('bulkInput');
+      const quickInputEl = $('quickInput');
+      const addBtn = $('addBtn');
+      const importBtn = $('importBtn');
+      const importFile = $('importFile');
+      const exportBtn = $('exportBtn');
+      const clearBtn = $('clearBtn');
+
+      const undoPullBtn = $('undoPullBtn');
+      const copyCompactBtn = $('copyCompactBtn');
+      const clearSearchBtn = $('clearSearchBtn');
+      const smartSummary = $('smartSummary');
+
+      const resultAreaEl = $('resultArea');
+      const timestampEl = $('timestamp');
+      const emailDisplayEl = $('emailDisplay');
+      const passDisplayEl = $('passDisplay');
+      const recDisplayEl = $('recDisplay');
+      const urlBtnEl = $('urlBtn');
+      const copyFullBtn = $('copyFullBtn');
+      const copyEPBtn = $('copyEPBtn');
+      const restoreBtn = $('restoreBtn');
+      const deleteLastBtn = $('deleteLastBtn');
+      const moveBtn = $('moveBtn');
+      const moveTargetsEl = $('moveTargets');
+
+      // Toast
+      const toast = $('toast');
+      const toastMsg = $('toastMsg');
+      const toastIcon = $('toastIcon');
+      let toastTimeout;
+
+      function showToast(message, type='info'){
+        toastMsg.textContent = message;
+        toast.className =
+          "fixed bottom-4 left-4 px-4 py-2.5 rounded-2xl shadow-2xl transform transition-all duration-300 z-[70] flex items-center gap-3 border";
+        if(type==='success'){
+          toast.classList.add('bg-emerald-950/80','border-emerald-800/60','text-emerald-100');
+          toastIcon.className="fa-solid fa-circle-check text-emerald-300";
+        }else if(type==='error'){
+          toast.classList.add('bg-red-950/80','border-red-800/60','text-red-100');
+          toastIcon.className="fa-solid fa-triangle-exclamation text-red-300";
+        }else if(type==='copy'){
+          toast.classList.add('bg-blue-950/80','border-blue-800/60','text-blue-100');
+          toastIcon.className="fa-solid fa-copy text-blue-300";
+        }else{
+          toast.classList.add('bg-slate-900/90','border-slate-700/70','text-white');
+          toastIcon.className="fa-solid fa-info-circle text-slate-200";
+        }
+        toast.classList.remove('translate-y-20','opacity-0');
+        clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(()=>toast.classList.add('translate-y-20','opacity-0'), 2200);
+      }
+
+      async function copyText(text){
+        try{
+          if(navigator.clipboard && window.isSecureContext){
+            await navigator.clipboard.writeText(text);
+            return true;
+          }
+        }catch(_){}
+        try{
+          const ta=document.createElement('textarea');
+          ta.value=text; ta.style.position='fixed'; ta.style.top='-9999px'; ta.style.left='-9999px';
+          document.body.appendChild(ta);
+          ta.focus(); ta.select();
+          const ok=document.execCommand('copy');
+          ta.remove();
+          return ok;
+        }catch(_){ return false; }
+      }
+
+      function invName(invId){
+        const inv = (config.inventories||[]).find(x=>x.id===invId);
+        return inv ? inv.name : invId;
+      }
+      function serviceLabelFor(invId){
+        if(invId === 'go') return 'ChatGPT';
+        if(invId === 'gemini') return 'Gemini';
+        return invName(invId);
+      }
+
+      function parseStandardLine(line){
+        const parts=line.split(';').map(p => p.trim());
+        if(parts.length<2) return null;
+        const email=parts[0], password=parts[1];
+        const recovery=parts[2]||'غير متوفر';
+        const url=parts[3]||'#';
+        if(!email || !password) return null;
+        // ✅ لازم يكون ايميل فعلاً
+        if(!email.includes('@')) return null;
+        return { email, password, recovery, url };
+      }
+      function parseQuickLine(line){
+        const m=line.match(/^([^\s@]+@[^\s@]+\.[^\s@]+)(.+)$/);
+        if(!m) return null;
+        const email=(m[1]||'').trim();
+        const password=(m[2]||'').trim();
+        if(!email||!password) return null;
+        return { email, password, recovery:'غير متوفر', url:'#' };
+      }
+
+      function applySearch(list){
+        const q=(searchInputEl.value||'').trim().toLowerCase();
+        if(!q) return list;
+        return list.filter(a=>String(a.email||'').toLowerCase().includes(q));
+      }
+
+      function renderTabs(){
+        tabsBar.innerHTML='';
+        for(const inv of config.inventories){
+          const btn=document.createElement('button');
+          btn.className = `press-glow soft tab-pill px-4 py-2 rounded-2xl text-sm font-bold text-slate-100 ${inv.id===activeInvId?'tab-active':''}`;
+          const color = inv.id==='main'?'text-blue-300':inv.id==='gemini'?'text-purple-300':inv.id==='go'?'text-emerald-300':'text-amber-300';
+          btn.innerHTML = `<i class="fa-solid fa-layer-group ml-2 ${color}"></i>${inv.name}`;
+          btn.addEventListener('click', ()=> setActive(inv.id));
+          tabsBar.appendChild(btn);
+        }
+      }
+
+      function renderHomeLinks(){
+        const links = config.links || [];
+        homeLinksEl.innerHTML='';
+        if(!links.length){ homeLinksEl.classList.add('hidden'); return; }
+        homeLinksEl.classList.remove('hidden');
+        for(const l of links){
+          const a=document.createElement('a');
+          a.href = l.url; a.target="_blank"; a.rel="noopener";
+          a.className = "press-glow soft tab-pill px-3 py-2 rounded-2xl text-sm font-bold text-slate-100 break-any";
+          a.textContent = l.name;
+          homeLinksEl.appendChild(a);
+        }
+      }
+
+      function setCounterColor(n){
+        if(n===0) stockCountEl.className="text-lg font-extrabold text-red-400";
+        else if(n<5) stockCountEl.className="text-lg font-extrabold text-amber-300";
+        else stockCountEl.className="text-lg font-extrabold text-emerald-300";
+      }
+
+      function displayResult(acc){
+        if(!acc) return;
+        resultAreaEl.classList.remove('hidden');
+        emailDisplayEl.textContent = acc.email || '---';
+        passDisplayEl.textContent  = acc.password || '---';
+        recDisplayEl.textContent   = acc.recovery || 'غير متوفر';
+        urlBtnEl.href = acc.url && acc.url!=='' ? acc.url : '#';
+        const now=new Date();
+        timestampEl.textContent = now.toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+      }
+
+      function updateSmartSummary(){
+        const s = ensureStore(activeInvId);
+        const filtered = applySearch(s.inventory);
+        const last = s.currentAccount;
+        const tab = invName(activeInvId);
+        smartSummary.textContent =
+          `تبويب: ${tab} — المتوفر (حسب البحث): ${filtered.length} — المسحوب: ${s.pulledCounter}` +
+          (last ? ` — آخر: ${last.email}` : ` — لا يوجد حساب مسحوب`);
+      }
+
+      function renderMoveButtons(){
+        moveTargetsEl.innerHTML = '';
+        moveTargetsEl.classList.add('hidden');
+        const targets = (config.moveRules && config.moveRules[activeInvId]) ? config.moveRules[activeInvId] : [];
+        const validTargets = targets.filter(t => t !== activeInvId && config.inventories.some(i=>i.id===t));
+        if(!validTargets.length){
+          moveBtn.style.opacity = '0.5';
+          moveBtn.style.pointerEvents = 'none';
+          return;
+        }
+        moveBtn.style.opacity = '1';
+        moveBtn.style.pointerEvents = '';
+        for(const t of validTargets){
+          const b=document.createElement('button');
+          b.className = "press-glow soft bg-purple-700/20 hover:bg-purple-700/28 border border-purple-700/28 text-purple-100 font-bold px-4 py-2 rounded-2xl text-sm";
+          const label = (activeInvId==='go' && t==='main') ? 'استرجاع للرئيسي' : `نقل إلى ${invName(t)}`;
+          b.textContent = label;
+          b.addEventListener('click', ()=> moveCurrentTo(t));
+          moveTargetsEl.appendChild(b);
+        }
+      }
+
+      function updateTitle(){
+        if(activeInvId === 'main') titleNameEl.textContent = 'المخزون الرئيسي';
+        else titleNameEl.textContent = `مخزون ${invName(activeInvId)}`;
+      }
+
+      function updateUI(){
+        const s = ensureStore(activeInvId);
+        const filtered = applySearch(s.inventory);
+        stockCountEl.textContent = filtered.length;
+        pulledCountEl.textContent = s.pulledCounter;
+        setCounterColor(filtered.length);
+        updateTitle();
+        if(s.currentAccount) displayResult(s.currentAccount);
+        else resultAreaEl.classList.add('hidden');
+        updateSmartSummary();
+        renderMoveButtons();
+      }
+
+      // ✅✅ هنا حل الملف: تجاهل سطر الهيدر + تجاهل أي سطر ما بيه @
+      function addTextDirectToInventory(text){
+        const s = ensureStore(activeInvId);
+
+        text = String(text || '').replace(/\u0000/g, '').replace(/^\uFEFF/, '');
+
+        const lines = text
+          .replace(/\r/g,'')
+          .split('\n')
+          .map(x=>x.trim())
+          .filter(Boolean);
+
+        let added=0, dup=0, bad=0, skippedHeader=0;
+        const existsEmail = (email) => s.inventory.some(a=>a.email===email);
+
+        for(const lineRaw of lines){
+          const line = lineRaw.trim();
+
+          // ✅ تجاهل الهيدر مثل: {login};{password};...
+          if(line.startsWith('{') || line.toLowerCase().includes('{login}') || line.toLowerCase().includes('login};{password')){
+            skippedHeader++;
+            continue;
+          }
+
+          let acc = null;
+
+          if (line.includes(';')) acc = parseStandardLine(line);
+          else if (line.includes(',')) acc = parseStandardLine(line.replace(/,/g,';'));
+          else acc = parseQuickLine(line);
+
+          if(!acc){ bad++; continue; }
+          if(existsEmail(acc.email)){ dup++; continue; }
+          s.inventory.push(acc); added++;
+        }
+
+        saveInv(activeInvId);
+        updateUI();
+
+        // ✅ رسائل أوضح حتى تعرف شنو صار بالضبط
+        if(added === 0 && (bad > 0 || skippedHeader > 0)){
+          showToast(`لم يتم إضافة شيء. (هيدر: ${skippedHeader} | غير صالح: ${bad})`, 'error');
+        }else{
+          let msg = `تمت إضافة ${added}`;
+          if(skippedHeader) msg += ` (تجاهل هيدر: ${skippedHeader})`;
+          if(dup) msg += ` (مكرر: ${dup})`;
+          if(bad) msg += ` (غير صالح: ${bad})`;
+          showToast(msg, added ? 'success' : 'error');
+        }
+
+        return { added, dup, bad, skippedHeader };
+      }
+
+      function addToStock(){
+        flash(addBtn);
+        const standardText = bulkInputEl.value || '';
+        const quickText    = quickInputEl.value || '';
+        if(!standardText.trim() && !quickText.trim()){
+          showToast('الحقول فارغة!', 'error');
+          return;
+        }
+        const combined = (standardText ? standardText + '\n' : '') + (quickText ? quickText + '\n' : '');
+        addTextDirectToInventory(combined);
+        bulkInputEl.value=''; quickInputEl.value='';
+      }
+
+      function pullAccount(){
+        flash(pullBtn);
+        const s = ensureStore(activeInvId);
+        const filtered = applySearch(s.inventory);
+        if(!filtered.length){ showToast('لا يوجد حساب (أو نتيجة للبحث).', 'error'); return; }
+
+        let idx = 0;
+        const q = (searchInputEl.value||'').trim();
+        if(q){
+          const em = filtered[0].email;
+          idx = s.inventory.findIndex(a=>a.email===em);
+          if(idx<0) idx=0;
+        }
+
+        const acc = s.inventory.splice(idx,1)[0];
+        s.currentAccount = acc;
+        s.pulledCounter++;
+        setUndo(activeInvId, { acc, idx, time: Date.now() });
+        saveInv(activeInvId);
+        displayResult(acc);
+        updateUI();
+        showToast('تم السحب', 'success');
+      }
+
+      function clearStorage(){
+        flash(clearBtn);
+        if(!confirm(`حذف مخزون (${invName(activeInvId)}) بالكامل؟`)) return;
+        const s = ensureStore(activeInvId);
+        s.inventory=[]; s.pulledCounter=0; s.currentAccount=null;
+        const k=keysFor(activeInvId);
+        localStorage.removeItem(k.data);
+        localStorage.removeItem(k.pulled);
+        localStorage.removeItem(k.last);
+        localStorage.removeItem(k.undo);
+        updateUI();
+        showToast('تم التصفير', 'success');
+      }
+
+      async function copyField(type){
+        const s = ensureStore(activeInvId);
+        const acc = s.currentAccount;
+        if(!acc){ showToast('لا يوجد حساب مسحوب.', 'error'); return; }
+        let text='', label='';
+        if(type==='email'){ text=acc.email; label='الإيميل'; }
+        else if(type==='password'){ text=acc.password; label='الباسورد'; }
+        else { text=acc.recovery; label='التحقق'; }
+        const ok = await copyText(String(text||''));
+        showToast(ok?`تم نسخ ${label}`:'فشل النسخ', ok?'copy':'error');
+      }
+
+      async function copyFull(){
+        flash(copyFullBtn);
+        const s = ensureStore(activeInvId);
+        const acc = s.currentAccount;
+        if(!acc){ showToast('لا يوجد حساب مسحوب.', 'error'); return; }
+        const text =
+          `الايميل: ${acc.email}\n`+
+          `الباسورد: ${acc.password}\n`+
+          `التحقق: ${acc.recovery}\n`+
+          `رابط الرسائل: ${acc.url || '#'}`
+        ;
+        const ok = await copyText(text);
+        showToast(ok?'تم النسخ الكامل':'فشل النسخ', ok?'success':'error');
+      }
+
+      async function copyEmailPassPretty(){
+        flash(copyEPBtn);
+        const s = ensureStore(activeInvId);
+        const acc = s.currentAccount;
+        if(!acc){ showToast('لا يوجد حساب مسحوب.', 'error'); return; }
+        const service = serviceLabelFor(activeInvId);
+        const text =
+          `${service} سنوي\n\n` +
+          `الايميل: ${acc.email}\n` +
+          `الباسورد: ${acc.password}\n`;
+        const ok = await copyText(text);
+        showToast(ok?`تم نسخ (Email+Pass)`:'فشل النسخ', ok?'copy':'error');
+      }
+
+      function restoreLast(){
+        flash(restoreBtn);
+        const s = ensureStore(activeInvId);
+        const acc = s.currentAccount;
+        if(!acc){ showToast('لا يوجد حساب مسحوب.', 'error'); return; }
+        if(!s.inventory.some(a=>a.email===acc.email)) s.inventory.unshift(acc);
+        if(s.pulledCounter>0) s.pulledCounter--;
+        s.currentAccount=null;
+        clearLast(activeInvId);
+        saveInv(activeInvId);
+        updateUI();
+        showToast('تم الاسترجاع', 'success');
+      }
+
+      function deleteLast(){
+        flash(deleteLastBtn);
+        const s = ensureStore(activeInvId);
+        if(!s.currentAccount){ showToast('لا يوجد حساب.', 'error'); return; }
+        s.currentAccount=null;
+        clearLast(activeInvId);
+        saveInv(activeInvId);
+        updateUI();
+        showToast('تم الحذف', 'success');
+      }
+
+      function undoPull(){
+        flash(undoPullBtn);
+        const u = getUndo(activeInvId);
+        if(!u || !u.acc){ showToast('ماكو تراجع.', 'error'); return; }
+        const s = ensureStore(activeInvId);
+        const idx = Number.isFinite(u.idx) ? Math.max(0, Math.min(u.idx, s.inventory.length)) : 0;
+        if(!s.inventory.some(a=>a.email===u.acc.email)) s.inventory.splice(idx,0,u.acc);
+        if(s.pulledCounter>0) s.pulledCounter--;
+        s.currentAccount=null;
+        clearLast(activeInvId);
+        setUndo(activeInvId, null);
+        saveInv(activeInvId);
+        updateUI();
+        showToast('تم التراجع', 'success');
+      }
+
+      function moveCurrentTo(targetInvId){
+        const sFrom = ensureStore(activeInvId);
+        const acc = sFrom.currentAccount;
+        if(!acc){ showToast('لا يوجد حساب مسحوب للنقل.', 'error'); return; }
+        const sTo = ensureStore(targetInvId);
+        loadInv(targetInvId);
+        if(sTo.inventory.some(a=>a.email===acc.email)){
+          showToast(`موجود بالفعل في ${invName(targetInvId)} (تم منع التكرار).`, 'error');
+          return;
+        }
+        sTo.inventory.unshift(acc);
+        sFrom.currentAccount = null;
+        clearLast(activeInvId);
+        saveInv(activeInvId);
+        saveInv(targetInvId);
+        updateUI();
+        showToast(`تم النقل إلى ${invName(targetInvId)}`, 'success');
+      }
+
+      function setActive(invId){
+        activeInvId = invId;
+        renderTabs();
+        loadInv(invId);
+        updateUI();
+      }
+
+      // ✅ قراءة قوية جداً
+      function readFileAsTextUltra(file){
+        return new Promise((resolve, reject) => {
+          try{
+            const fr = new FileReader();
+            fr.onerror = () => reject(fr.error || new Error('FileReader error'));
+            fr.onload = () => {
+              try{
+                const buf = fr.result;
+                const u8 = new Uint8Array(buf);
+
+                const decodeTry = (enc) => {
+                  try{
+                    if (typeof TextDecoder === 'undefined') return null;
+                    return new TextDecoder(enc, { fatal:false }).decode(u8);
+                  }catch(_){ return null; }
+                };
+
+                const tries = [
+                  decodeTry('utf-8'),
+                  decodeTry('utf-16le'),
+                  decodeTry('utf-16be'),
+                  decodeTry('windows-1256'),
+                  decodeTry('iso-8859-1'),
+                ].filter(x => x !== null);
+
+                const score = (s) => {
+                  if(!s) return -999;
+                  s = String(s);
+                  const nulls = (s.match(/\u0000/g) || []).length;
+                  const rep   = (s.match(/\uFFFD/g) || []).length;
+                  return (s.trim().length) - (nulls*10) - (rep*2);
+                };
+
+                let best = '';
+                let bestScore = -999999;
+
+                for(const t of tries){
+                  const sc = score(t);
+                  if(sc > bestScore){
+                    bestScore = sc;
+                    best = t;
+                  }
+                }
+
+                if(!best || !best.trim()){
+                  let s = '';
+                  for(let i=0;i<u8.length;i++) s += String.fromCharCode(u8[i]);
+                  best = s;
+                }
+
+                best = String(best || '').replace(/\u0000/g,'').replace(/^\uFEFF/,'');
+                resolve(best);
+              }catch(e){
+                reject(e);
+              }
+            };
+            fr.readAsArrayBuffer(file);
+          }catch(e){
+            reject(e);
+          }
+        });
+      }
+
+      async function importTxtFile(file){
+        if(!file){ showToast('ما تم اختيار ملف.', 'error'); return; }
+        flash(importBtn);
+
+        if (file.size === 0) { showToast('الملف فارغ.', 'error'); return; }
+
+        try{
+          const content = await readFileAsTextUltra(file);
+          if(!content || !content.trim()){
+            showToast('تمت القراءة لكن المحتوى فارغ.', 'error');
+            return;
+          }
+          addTextDirectToInventory(content);
+        }catch(e){
+          console.error('Import error:', e);
+          showToast('فشل قراءة الملف من المتصفح.', 'error');
+        }
+      }
+
+      function exportStockToTxt(){
+        flash(exportBtn);
+        const s = ensureStore(activeInvId);
+        const list = applySearch(s.inventory);
+        if(!list.length){ showToast('لا يوجد للتصدير.', 'error'); return; }
+        const content = list.map(a=>`${a.email};${a.password};${a.recovery};${a.url}`).join('\n');
+        const blob = new Blob([content], { type:'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href=url;
+        a.download=`${activeInvId}_${new Date().toISOString().slice(0,10)}.txt`;
+        document.body.appendChild(a);
+        a.click(); a.remove();
+        URL.revokeObjectURL(url);
+        showToast(`تم تصدير ${list.length}`, 'success');
+      }
+
+      function applyUiToggles(){
+        $('snowCanvas').style.display = config.ui.snow ? '' : 'none';
+        smartBtn.style.display = config.ui.smart ? '' : 'none';
+        if(!config.ui.smart) smartPanel.classList.add('hidden');
+        toggleFeedBtn.style.display = config.ui.feed ? '' : 'none';
+        if(!config.ui.feed) feedPanel.classList.add('hidden');
+        searchWrap.style.display = config.ui.search ? '' : 'none';
+        if(!config.ui.search){ searchInputEl.value=''; }
+        const impExp = config.ui.importExport ? '' : 'none';
+        importBtn.style.display = impExp;
+        exportBtn.style.display = impExp;
+        quickInputEl.style.display = config.ui.quickInput ? '' : 'none';
+      }
+
+      // Settings
+      const settingsModal = $('settingsModal');
+      const settingsBtn = $('settingsBtn');
+      const closeSettingsBtn = $('closeSettingsBtn');
+
+      const invList = $('invList');
+      const newInvName = $('newInvName');
+      const addInvBtn = $('addInvBtn');
+      const resetRulesBtn = $('resetRulesBtn');
+
+      const linkName = $('linkName');
+      const linkUrl = $('linkUrl');
+      const addLinkBtn = $('addLinkBtn');
+      const linksList = $('linksList');
+      const maxLinksInput = $('maxLinksInput');
+      const saveMaxLinksBtn = $('saveMaxLinksBtn');
+
+      const toggleSnow = $('toggleSnow');
+      const toggleSmart = $('toggleSmart');
+      const toggleFeed = $('toggleFeed');
+      const toggleSearch = $('toggleSearch');
+      const toggleImportExport = $('toggleImportExport');
+      const toggleQuickInput = $('toggleQuickInput');
+
+      const saveSettingsBtn = $('saveSettingsBtn');
+      const resetAllBtn = $('resetAllBtn');
+
+      function openSettings(){
+        flash(settingsBtn);
+        renderSettings();
+        settingsModal.classList.add('open');
+        document.body.style.overflow = 'hidden';
+      }
+      function closeSettings(){
+        flash(closeSettingsBtn);
+        settingsModal.classList.remove('open');
+        document.body.style.overflow = '';
+      }
+
+      function slugifyId(name){
+        const base = (name||'').toLowerCase().trim()
+          .replace(/[\u0600-\u06FF]/g, '')
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '');
+        return base || ('inv-' + Math.random().toString(16).slice(2,8));
+      }
+
+      function renderLinksList(){
+        linksList.innerHTML='';
+        const links = config.links || [];
+        if(!links.length){
+          const empty=document.createElement('div');
+          empty.className="text-[12px] glow-text";
+          empty.textContent="لا توجد روابط حالياً.";
+          linksList.appendChild(empty);
+          return;
+        }
+        links.forEach((l, idx)=>{
+          const row=document.createElement('div');
+          row.className="flex items-center justify-between gap-2 bg-slate-950/20 border border-slate-700/40 rounded-2xl px-3 py-2";
+          row.innerHTML=`
+            <div class="min-w-0 break-any">
+              <div class="font-bold text-white text-sm">${l.name}</div>
+              <div class="text-[11px] text-slate-400">${l.url}</div>
+            </div>
+            <button class="press-glow soft bg-red-700/18 hover:bg-red-700/25 border border-red-700/25 text-red-100 font-bold px-3 py-2 rounded-2xl text-xs" data-del-link="${idx}">حذف</button>
+          `;
+          linksList.appendChild(row);
+        });
+        linksList.querySelectorAll('[data-del-link]').forEach(btn=>{
+          btn.addEventListener('click', ()=>{
+            const i = Number(btn.getAttribute('data-del-link'));
+            config.links.splice(i,1);
+            saveConfig();
+            renderLinksList();
+            renderHomeLinks();
+            showToast('تم حذف الرابط', 'success');
+          });
+        });
+      }
+
+      function renderSettings(){
+        invList.innerHTML='';
+        for(const inv of config.inventories){
+          const row = document.createElement('div');
+          row.className="flex items-center justify-between gap-2 bg-slate-950/20 border border-slate-700/40 rounded-2xl px-3 py-2";
+          row.innerHTML = `
+            <div class="min-w-0 break-any">
+              <div class="font-bold text-white text-sm">${inv.name}</div>
+              <div class="text-[11px] text-slate-400 font-mono">id: ${inv.id}</div>
+            </div>
+            <div class="flex gap-2 shrink-0">
+              ${inv.locked ? `<span class="text-[11px] glow-text">رئيسي</span>` : `
+                <button class="press-glow soft bg-red-700/18 hover:bg-red-700/25 border border-red-700/25 text-red-100 font-bold px-3 py-2 rounded-2xl text-xs" data-remove="${inv.id}">حذف</button>
+              `}
+            </div>
+          `;
+          invList.appendChild(row);
+        }
+        invList.querySelectorAll('[data-remove]').forEach(btn=>{
+          btn.addEventListener('click', ()=>{
+            const id = btn.getAttribute('data-remove');
+            removeInventory(id);
+          });
+        });
+
+        maxLinksInput.value = String(config.maxLinks ?? 5);
+        renderLinksList();
+
+        toggleSnow.checked = !!config.ui.snow;
+        toggleSmart.checked = !!config.ui.smart;
+        toggleFeed.checked = !!config.ui.feed;
+        toggleSearch.checked = !!config.ui.search;
+        toggleImportExport.checked = !!config.ui.importExport;
+        toggleQuickInput.checked = !!config.ui.quickInput;
+      }
+
+      function removeInventory(invId){
+        const inv = config.inventories.find(x=>x.id===invId);
+        if(!inv || inv.locked) return;
+        if(!confirm(`حذف مخزون (${inv.name})؟ سيتم حذف بياناته أيضاً.`)) return;
+
+        config.inventories = config.inventories.filter(x=>x.id!==invId);
+        for(const k in (config.moveRules||{})){
+          config.moveRules[k] = (config.moveRules[k]||[]).filter(x=>x!==invId);
+        }
+        delete config.moveRules[invId];
+
+        const k = keysFor(invId);
+        localStorage.removeItem(k.data);
+        localStorage.removeItem(k.pulled);
+        localStorage.removeItem(k.last);
+        localStorage.removeItem(k.undo);
+
+        if(activeInvId===invId) activeInvId='main';
+
+        saveConfig();
+        renderTabs();
+        setActive(activeInvId);
+        renderSettings();
+        showToast('تم حذف المخزون', 'success');
+      }
+
+      function addInventory(){
+        flash(addInvBtn);
+        const name = (newInvName.value||'').trim();
+        if(!name){ showToast('اكتب اسم المخزون', 'error'); return; }
+        if(name.length > 18){ showToast('الاسم طويل، خلي أقصر', 'error'); return; }
+
+        const id = slugifyId(name);
+        if(config.inventories.some(x=>x.id===id)){
+          showToast('هذا الاسم/المعرف موجود. غيّر الاسم.', 'error');
+          return;
+        }
+
+        config.inventories.push({ id, name, locked:false });
+        const hasGem = config.inventories.some(x=>x.id==='gemini');
+        config.moveRules[id] = hasGem ? ['gemini'] : ['main'];
+
+        saveConfig();
+        newInvName.value='';
+        renderTabs();
+        renderSettings();
+        showToast('تمت إضافة مخزون جديد', 'success');
+      }
+
+      function resetMoveRules(){
+        flash(resetRulesBtn);
+        config.moveRules = structuredClone(defaultConfig.moveRules);
+        saveConfig();
+        renderSettings();
+        renderMoveButtons();
+        showToast('تمت إعادة قواعد النقل', 'success');
+      }
+
+      function addLink(){
+        flash(addLinkBtn);
+        const name=(linkName.value||'').trim();
+        const url=(linkUrl.value||'').trim();
+        const max = Math.max(0, Number(config.maxLinks||0));
+        if(!name || !url){ showToast('اكتب الاسم والرابط', 'error'); return; }
+        if(max === 0){ showToast('الحد الأقصى حالياً 0. غيّره أولاً.', 'error'); return; }
+        if((config.links||[]).length >= max){ showToast(`وصلت للحد الأقصى (${max}).`, 'error'); return; }
+        try { new URL(url); } catch { showToast('الرابط غير صحيح', 'error'); return; }
+
+        config.links.push({ name, url });
+        saveConfig();
+        linkName.value=''; linkUrl.value='';
+        renderLinksList();
+        renderHomeLinks();
+        showToast('تمت إضافة الرابط', 'success');
+      }
+
+      function saveMaxLinks(){
+        flash(saveMaxLinksBtn);
+        const n = Math.max(0, Math.floor(Number(maxLinksInput.value||0)));
+        config.maxLinks = n;
+        if((config.links||[]).length > n) config.links = config.links.slice(0, n);
+        saveConfig();
+        renderLinksList();
+        renderHomeLinks();
+        showToast('تم حفظ الحد', 'success');
+      }
+
+      function saveUiSettings(){
+        flash(saveSettingsBtn);
+        config.ui.snow = toggleSnow.checked;
+        config.ui.smart = toggleSmart.checked;
+        config.ui.feed = toggleFeed.checked;
+        config.ui.search = toggleSearch.checked;
+        config.ui.importExport = toggleImportExport.checked;
+        config.ui.quickInput = toggleQuickInput.checked;
+        saveConfig();
+        applyUiToggles();
+        updateUI();
+        showToast('تم حفظ الإعدادات', 'success');
+      }
+
+      function resetAll(){
+        flash(resetAllBtn);
+        if(!confirm('تصفير كل شيء؟ (كل المخزونات + الإعدادات)')) return;
+        const invs = config.inventories || [];
+        for(const inv of invs){
+          const k = keysFor(inv.id);
+          localStorage.removeItem(k.data);
+          localStorage.removeItem(k.pulled);
+          localStorage.removeItem(k.last);
+          localStorage.removeItem(k.undo);
+        }
+        localStorage.removeItem(CONFIG_KEY);
+        config = loadConfig();
+        store = {};
+        activeInvId='main';
+        renderTabs();
+        renderHomeLinks();
+        applyUiToggles();
+        setActive('main');
+        showToast('تم التصفير الكامل', 'success');
+      }
+
+      // Events
+      toggleFeedBtn.addEventListener('click', ()=>{ flash(toggleFeedBtn); feedPanel.classList.toggle('hidden'); });
+      smartBtn.addEventListener('click', ()=>{ flash(smartBtn); smartPanel.classList.toggle('hidden'); updateSmartSummary(); });
+
+      searchInputEl.addEventListener('input', ()=> updateUI());
+      clearSearchBtn.addEventListener('click', ()=>{ flash(clearSearchBtn); searchInputEl.value=''; updateUI(); });
+
+      pullBtn.addEventListener('click', pullAccount);
+      addBtn.addEventListener('click', addToStock);
+      clearBtn.addEventListener('click', clearStorage);
+
+      importBtn.addEventListener('click', ()=>{
+        flash(importBtn);
+        setTimeout(()=> importFile.click(), 0);
+      });
+
+      importFile.addEventListener('change', async ()=>{
+        const file = importFile.files && importFile.files[0] ? importFile.files[0] : null;
+        await importTxtFile(file);
+        importFile.value='';
+      });
+
+      exportBtn.addEventListener('click', exportStockToTxt);
+
+      undoPullBtn.addEventListener('click', undoPull);
+      copyCompactBtn.addEventListener('click', async()=> {
+        flash(copyCompactBtn);
+        const s = ensureStore(activeInvId);
+        const acc = s.currentAccount;
+        if(!acc){ showToast('لا يوجد حساب مسحوب.', 'error'); return; }
+        const line = `${acc.email};${acc.password};${acc.recovery || 'غير متوفر'};${acc.url || '#'}`;
+        const ok = await copyText(line);
+        showToast(ok?'تم نسخ سطر واحد':'فشل النسخ', ok?'copy':'error');
+      });
+
+      copyFullBtn.addEventListener('click', copyFull);
+      copyEPBtn.addEventListener('click', copyEmailPassPretty);
+      restoreBtn.addEventListener('click', restoreLast);
+      deleteLastBtn.addEventListener('click', deleteLast);
+
+      document.querySelectorAll('[data-copy]').forEach(card=>{
+        card.addEventListener('click', ()=>{ flash(card); copyField(card.getAttribute('data-copy')); });
+      });
+
+      moveBtn.addEventListener('click', ()=>{
+        flash(moveBtn);
+        moveTargetsEl.classList.toggle('hidden');
+      });
+
+      // Settings modal
+      const settingsBtn = $('settingsBtn');
+      const closeSettingsBtn = $('closeSettingsBtn');
+      settingsBtn.addEventListener('click', openSettings);
+      closeSettingsBtn.addEventListener('click', closeSettings);
+      settingsModal.addEventListener('click', (e)=>{ if(e.target===settingsModal) closeSettings(); });
+
+      $('addInvBtn').addEventListener('click', addInventory);
+      $('resetRulesBtn').addEventListener('click', resetMoveRules);
+
+      $('addLinkBtn').addEventListener('click', addLink);
+      $('saveMaxLinksBtn').addEventListener('click', saveMaxLinks);
+
+      $('saveSettingsBtn').addEventListener('click', saveUiSettings);
+      $('resetAllBtn').addEventListener('click', resetAll);
+
+      // Init
+      function loadAll(){ for(const inv of config.inventories) loadInv(inv.id); }
+      renderTabs();
+      renderHomeLinks();
+      applyUiToggles();
+      loadAll();
+      setActive(activeInvId);
+
+      // Snow
+      const canvas = $('snowCanvas');
+      const ctx = canvas.getContext('2d', { alpha:true });
+      let W=0,H=0;
+      function resize(){ W=canvas.width=window.innerWidth; H=canvas.height=window.innerHeight; }
+      window.addEventListener('resize', resize, { passive:true });
+      resize();
+
+      const flakes = Array.from({ length: 55 }, () => ({
+        x: Math.random()*W,
+        y: Math.random()*H,
+        r: 0.6 + Math.random()*1.6,
+        v: 0.25 + Math.random()*0.9,
+        d: (Math.random()*0.6) - 0.3,
+        a: 0.12 + Math.random()*0.20
+      }));
+
+      function snowTick(){
+        if(!config.ui.snow){ requestAnimationFrame(snowTick); return; }
+        ctx.clearRect(0,0,W,H);
+        for(const f of flakes){
+          f.y += f.v; f.x += f.d;
+          if(f.y > H+5){ f.y=-5; f.x=Math.random()*W; }
+          if(f.x > W+5) f.x=-5;
+          if(f.x < -5) f.x=W+5;
+          ctx.beginPath();
+          ctx.arc(f.x,f.y,f.r,0,Math.PI*2);
+          ctx.fillStyle = `rgba(255,255,255,${f.a})`;
+          ctx.fill();
+        }
+        requestAnimationFrame(snowTick);
+      }
+      snowTick();
+
+    })();
+  </script>
+</body>
+</html>
