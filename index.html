@@ -20,13 +20,11 @@
       overflow-x:hidden;
     }
 
-    /* Scrollbar */
     ::-webkit-scrollbar{ width:8px; }
     ::-webkit-scrollbar-track{ background:#070c18; }
     ::-webkit-scrollbar-thumb{ background:#3b82f6; border-radius:6px; }
     ::-webkit-scrollbar-thumb:hover{ background:#2563eb; }
 
-    /* Glass (خفيف وسلس) */
     .glass-panel{
       background: rgba(15,23,42,.55);
       border: 1px solid rgba(148,163,184,.18);
@@ -34,28 +32,22 @@
       -webkit-backdrop-filter: blur(10px);
     }
 
-    /* إزالة الحركات الثقيلة + إبقاء انتقالات بسيطة */
     .soft{
       transition: background .16s ease, border-color .16s ease, box-shadow .16s ease, transform .06s ease;
       will-change: auto;
     }
 
-    /* لمعة بسيطة عند الضغط */
     .press-glow:active{
       box-shadow: 0 0 0 3px rgba(255,255,255,.08), 0 0 18px rgba(59,130,246,.20);
       transform: translateY(1px);
     }
 
-    /* لمعة قصيرة (JS يضيف class) */
-    .flash{
-      animation: flash .22s ease-out;
-    }
+    .flash{ animation: flash .22s ease-out; }
     @keyframes flash{
       0%{ box-shadow: 0 0 0 rgba(255,255,255,0); }
       100%{ box-shadow: 0 0 0 3px rgba(255,255,255,.08), 0 0 22px rgba(56,189,248,.20); }
     }
 
-    /* حقول النسخ */
     .field-copy{
       cursor:pointer;
       transition: background .16s ease, border-color .16s ease, box-shadow .16s ease;
@@ -66,7 +58,6 @@
       box-shadow: 0 10px 25px rgba(0,0,0,.18);
     }
 
-    /* شارات التبويب */
     .tab-pill{
       border: 1px solid rgba(148,163,184,.18);
       background: rgba(2,6,23,.45);
@@ -78,16 +69,14 @@
       box-shadow: 0 0 0 3px rgba(59,130,246,.12);
     }
 
-    /* Canvas snow overlay */
     #snowCanvas{
       position: fixed;
       inset: 0;
       pointer-events: none;
       z-index: 5;
-      opacity: .55; /* خفيف */
+      opacity: .55;
     }
 
-    /* Modal */
     .modal-backdrop{
       position: fixed;
       inset: 0;
@@ -100,7 +89,21 @@
     }
     .modal-backdrop.show{ display:flex; }
 
-    /* Badge */
+    /* ✅ منع تحريك الخلفية عند فتح المودال */
+    body.modal-open{
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    /* ✅ خلي سكرول داخل نافذة المودال */
+    .modal-panel{
+      max-height: 82vh;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* شارة اسم المصمم */
     .nbb-verified{
       display:inline-flex;
       align-items:center;
@@ -125,12 +128,6 @@
       0%   { background: rgba(59,130,246,.30); box-shadow: 0 0 18px rgba(59,130,246,.18); }
       50%  { background: rgba(16,185,129,.28); box-shadow: 0 0 18px rgba(16,185,129,.18); }
       100% { background: rgba(168,85,247,.28); box-shadow: 0 0 18px rgba(168,85,247,.18); }
-    }
-    .nbb-fire{
-      position: relative;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
     }
     .nbb-fire i{
       filter: drop-shadow(0 0 10px rgba(251,146,60,.22));
@@ -271,8 +268,7 @@ email;pass;recovery;url"></textarea>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div class="press-glow field-copy soft bg-slate-950/25 p-3 rounded-2xl border border-slate-700/60 group"
-                 data-copy="email">
+            <div class="press-glow field-copy soft bg-slate-950/25 p-3 rounded-2xl border border-slate-700/60 group" data-copy="email">
               <label class="text-xs text-slate-400 block mb-1">البريد الإلكتروني (Email)</label>
               <div class="flex justify-between items-center gap-3">
                 <span id="emailDisplay" class="font-mono text-blue-300 truncate">---</span>
@@ -280,8 +276,7 @@ email;pass;recovery;url"></textarea>
               </div>
             </div>
 
-            <div class="press-glow field-copy soft bg-slate-950/25 p-3 rounded-2xl border border-slate-700/60 group"
-                 data-copy="password">
+            <div class="press-glow field-copy soft bg-slate-950/25 p-3 rounded-2xl border border-slate-700/60 group" data-copy="password">
               <label class="text-xs text-slate-400 block mb-1">كلمة المرور (Password)</label>
               <div class="flex justify-between items-center gap-3">
                 <span id="passDisplay" class="font-mono text-rose-300 truncate">---</span>
@@ -289,8 +284,7 @@ email;pass;recovery;url"></textarea>
               </div>
             </div>
 
-            <div class="press-glow field-copy soft bg-slate-950/25 p-3 rounded-2xl border border-slate-700/60 group"
-                 data-copy="recovery">
+            <div class="press-glow field-copy soft bg-slate-950/25 p-3 rounded-2xl border border-slate-700/60 group" data-copy="recovery">
               <label class="text-xs text-slate-400 block mb-1">الاسترداد (Recovery Email)</label>
               <div class="flex justify-between items-center gap-3">
                 <span id="recDisplay" class="font-mono text-amber-300 truncate">---</span>
@@ -330,7 +324,6 @@ email;pass;recovery;url"></textarea>
               </button>
             </div>
 
-            <!-- أزرار النقل الديناميكية (حسب المخازن) -->
             <div id="moveButtonsWrap" class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2"></div>
 
             <p class="text-center text-[11px] text-slate-300">
@@ -353,7 +346,7 @@ email;pass;recovery;url"></textarea>
 
   <!-- Settings Modal -->
   <div id="settingsModal" class="modal-backdrop">
-    <div class="glass-panel soft w-full max-w-2xl rounded-3xl p-5 border border-slate-700/50 shadow-2xl">
+    <div class="glass-panel soft modal-panel w-full max-w-2xl rounded-3xl p-5 border border-slate-700/50 shadow-2xl">
       <div class="flex justify-between items-center mb-3">
         <div class="flex items-center gap-2">
           <i class="fa-solid fa-gear text-slate-300"></i>
@@ -378,7 +371,7 @@ email;pass;recovery;url"></textarea>
 
   <!-- Links Modal -->
   <div id="linksModal" class="modal-backdrop">
-    <div class="glass-panel soft w-full max-w-2xl rounded-3xl p-5 border border-slate-700/50 shadow-2xl">
+    <div class="glass-panel soft modal-panel w-full max-w-2xl rounded-3xl p-5 border border-slate-700/50 shadow-2xl">
       <div class="flex justify-between items-center mb-3">
         <div class="flex items-center gap-2">
           <i class="fa-solid fa-link text-sky-300"></i>
@@ -407,10 +400,8 @@ email;pass;recovery;url"></textarea>
 
   <script>
     (function () {
-      // DOM
       const stockCountEl = document.getElementById('stockCount');
       const pulledCountEl = document.getElementById('pulledCount');
-
       const titleNameEl = document.getElementById('titleName');
 
       const tabsWrap = document.getElementById('tabsWrap');
@@ -458,17 +449,14 @@ email;pass;recovery;url"></textarea>
       const toastIcon = document.getElementById('toastIcon');
       let toastTimeout;
 
-      // ==========================
-      // Inventories (ديناميكي) — مع حفظ القديم
-      // ==========================
+      // ===== Inventories =====
       const META_KEY = 'smartInv_inventories_meta_v1';
       const ACTIVE_KEY = 'smartInv_activeInventory_v1';
 
-      // كان Gemini وصار Go (نفس الـ id والـ keys حتى لا تضيع الإيميلات)
-      const GO_ID = 'gemini';              // legacy keys smartGemini_*
-      const NEW_GEMINI_ID = 'gemini_new';  // مخزون ثالث جديد باسم Gemini
+      // Go هو نفس مفاتيح Gemini القديمة (حتى لا تضيع بياناتك)
+      const GO_ID = 'gemini';
+      const NEW_GEMINI_ID = 'gemini_new';
 
-      // Legacy keys
       const LEGACY_KEYS = {
         main:   { data:'smartInventory_data', pulled:'smartInventory_pulled', last:'smartInventory_lastPulled', undo:'smartInventory_undo' },
         gemini: { data:'smartGemini_data',    pulled:'smartGemini_pulled',   last:'smartGemini_lastPulled',   undo:'smartGemini_undo' }
@@ -478,11 +466,10 @@ email;pass;recovery;url"></textarea>
       let activeInvId = 'main';
       let store = {};
 
-      // Links storage
+      // Links
       const LINKS_KEY = 'smartInv_quickLinks_v2';
       let quickLinks = [];
 
-      // Utils
       function safeJsonParse(value, fallback) { try { return JSON.parse(value); } catch { return fallback; } }
 
       function flash(el){
@@ -495,7 +482,6 @@ email;pass;recovery;url"></textarea>
 
       function showToast(message, type = 'info') {
         toastMsg.textContent = message;
-
         toast.className =
           "fixed bottom-5 left-5 px-5 py-3 rounded-2xl shadow-2xl transform transition-all duration-300 z-50 flex items-center gap-3 font-bold border";
 
@@ -525,7 +511,6 @@ email;pass;recovery;url"></textarea>
             return true;
           }
         } catch (_) {}
-
         try {
           const ta = document.createElement('textarea');
           ta.value = text;
@@ -538,9 +523,7 @@ email;pass;recovery;url"></textarea>
           const ok = document.execCommand('copy');
           document.body.removeChild(ta);
           return ok;
-        } catch (_) {
-          return false;
-        }
+        } catch (_) { return false; }
       }
 
       function normalizeUrl(u){
@@ -550,15 +533,11 @@ email;pass;recovery;url"></textarea>
         return url;
       }
 
-      // ==========================
-      // Keys per inventory
-      // ==========================
       function getInvMetaById(id){ return inventoriesMeta.find(x => x.id === id) || null; }
 
       function keysFor(id){
         const meta = getInvMetaById(id);
         if (!meta) return LEGACY_KEYS.main;
-
         if (meta.type === 'legacy-main') return LEGACY_KEYS.main;
         if (meta.type === 'legacy-gemini') return LEGACY_KEYS.gemini;
 
@@ -592,7 +571,6 @@ email;pass;recovery;url"></textarea>
         const s = S();
         s.inventory = data ? safeJsonParse(data, []) : [];
         s.pulledCounter = pulled ? Number(pulled) || 0 : 0;
-
         const last = localStorage.getItem(keys.last);
         s.currentAccount = last ? safeJsonParse(last, null) : null;
       }
@@ -602,15 +580,11 @@ email;pass;recovery;url"></textarea>
         const last = localStorage.getItem(keys.last);
         return last ? safeJsonParse(last, null) : null;
       }
-
       function clearLastPulled(id) {
         const keys = keysFor(id);
         localStorage.removeItem(keys.last);
       }
 
-      // ==========================
-      // Meta init / migration
-      // ==========================
       function ensureMeta(){
         const raw = localStorage.getItem(META_KEY);
         if (raw) inventoriesMeta = safeJsonParse(raw, []);
@@ -626,7 +600,6 @@ email;pass;recovery;url"></textarea>
           if (!inventoriesMeta.some(x => x.id === 'main')) {
             inventoriesMeta.unshift({ id:'main', name:'الأساسي', type:'legacy-main' });
           }
-
           const go = inventoriesMeta.find(x => x.id === GO_ID);
           if (!go) inventoriesMeta.push({ id:GO_ID, name:'Go', type:'legacy-gemini' });
           else { go.name = 'Go'; go.type = 'legacy-gemini'; }
@@ -634,7 +607,6 @@ email;pass;recovery;url"></textarea>
           if (!inventoriesMeta.some(x => x.id === NEW_GEMINI_ID)) {
             inventoriesMeta.push({ id:NEW_GEMINI_ID, name:'Gemini', type:'custom' });
           }
-
           localStorage.setItem(META_KEY, JSON.stringify(inventoriesMeta));
         }
 
@@ -651,26 +623,12 @@ email;pass;recovery;url"></textarea>
         });
       }
 
-      function setActiveInventory(id){
-        if (!inventoriesMeta.some(x => x.id === id)) return;
-
-        activeInvId = id;
-        localStorage.setItem(ACTIVE_KEY, id);
-
-        loadActive();
-        updateHeaderTitle();
-        buildTabs();
-        updateUI();
-        renderMoveButtons(); // مهم: يحدث أزرار النقل حسب المخازن + حسب التبويب الحالي
-      }
-
       function updateHeaderTitle(){
         titleNameEl.textContent = 'المخزون';
       }
 
       function buildTabs(){
         tabsWrap.innerHTML = '';
-
         for (const inv of inventoriesMeta) {
           const btn = document.createElement('button');
           btn.className = "press-glow soft tab-pill px-4 py-2 rounded-2xl text-sm font-bold text-slate-100";
@@ -678,7 +636,6 @@ email;pass;recovery;url"></textarea>
 
           let icon = 'fa-layer-group';
           let iconColor = 'text-blue-300';
-
           if (inv.id === GO_ID) { icon = 'fa-bolt'; iconColor = 'text-emerald-300'; }
           if (inv.id === NEW_GEMINI_ID) { icon = 'fa-wand-magic-sparkles'; iconColor = 'text-sky-300'; }
           if (inv.id !== 'main' && inv.id !== GO_ID && inv.id !== NEW_GEMINI_ID) { icon = 'fa-box'; iconColor = 'text-amber-300'; }
@@ -689,135 +646,27 @@ email;pass;recovery;url"></textarea>
         }
       }
 
-      function createNewInventory(){
-        flash(addInvBtn);
-
-        const name = prompt('اكتب اسم المخزون الجديد:');
-        if (!name || !String(name).trim()) {
-          showToast('تم الإلغاء (اسم المخزون فارغ).', 'error');
-          return;
-        }
-
-        const n = String(name).trim();
-        if (inventoriesMeta.some(x => x.name === n)) {
-          showToast('هذا الاسم موجود بالفعل. اختر اسم مختلف.', 'error');
-          return;
-        }
-
-        const id = 'inv_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,7);
-        inventoriesMeta.push({ id, name: n, type:'custom' });
-        localStorage.setItem(META_KEY, JSON.stringify(inventoriesMeta));
-
-        store[id] = { inventory: [], pulledCounter: 0, currentAccount: null };
-
-        buildTabs();
-        // يبقى المخزون الجديد تحت (في آخر التبويبات) لأننا push
-        // ثم نفعله مباشرة (كما كان) + سيظهر زر النقل له في (الأساسي)
-        setActiveInventory(id);
-        showToast('تم إنشاء مخزون جديد ✅', 'success');
-      }
-
-      function openSettings(){
-        flash(settingsBtn);
-        renderSettingsInventories();
-        settingsModal.classList.add('show');
-      }
-      function closeSettings(){
-        settingsModal.classList.remove('show');
-      }
-
-      function deleteInventory(invId){
-        const meta = getInvMetaById(invId);
-        if (!meta) return;
-
-        if (!confirm(`هل تريد حذف مخزون: (${meta.name}) من التخزين؟\nهذا سيحذف الإيميلات والعدادات الخاصة به فقط.`)) return;
-
-        const keys = keysFor(invId);
-        localStorage.removeItem(keys.data);
-        localStorage.removeItem(keys.pulled);
-        localStorage.removeItem(keys.last);
-        localStorage.removeItem(keys.undo);
-
-        inventoriesMeta = inventoriesMeta.filter(x => x.id !== invId);
-
-        if (!inventoriesMeta.some(x => x.id === 'main')) {
-          inventoriesMeta.unshift({ id:'main', name:'الأساسي', type:'legacy-main' });
-        }
-
-        const go = inventoriesMeta.find(x => x.id === GO_ID);
-        if (!go) inventoriesMeta.push({ id:GO_ID, name:'Go', type:'legacy-gemini' });
-        else { go.name='Go'; go.type='legacy-gemini'; }
-
-        if (!inventoriesMeta.some(x => x.id === NEW_GEMINI_ID)) {
-          inventoriesMeta.push({ id:NEW_GEMINI_ID, name:'Gemini', type:'custom' });
-        }
-
-        localStorage.setItem(META_KEY, JSON.stringify(inventoriesMeta));
-
-        if (activeInvId === invId) {
-          activeInvId = inventoriesMeta[0].id;
-          localStorage.setItem(ACTIVE_KEY, activeInvId);
-        }
-
-        delete store[invId];
-
-        buildTabs();
-        setActiveInventory(activeInvId);
-        renderSettingsInventories();
-        showToast('تم حذف المخزون ✅', 'success');
-      }
-
-      function renderSettingsInventories(){
-        invListWrap.innerHTML = '';
-
-        for (const inv of inventoriesMeta) {
-          const row = document.createElement('div');
-          row.className = "flex flex-col md:flex-row gap-2 md:items-center md:justify-between bg-slate-950/25 border border-slate-700/40 rounded-2xl p-3";
-
-          const left = document.createElement('div');
-          left.className = "text-sm text-slate-100";
-          left.innerHTML =
-            `<div class="font-extrabold">${inv.name}</div>
-             <div class="text-xs text-slate-300">ID: ${inv.id}</div>`;
-
-          const right = document.createElement('div');
-          right.className = "flex gap-2";
-
-          const switchBtn = document.createElement('button');
-          switchBtn.className = "press-glow soft bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/60 text-white font-bold px-4 py-2 rounded-2xl text-sm";
-          switchBtn.innerHTML = `<i class="fa-solid fa-arrow-right-arrow-left ml-2 text-slate-200"></i>فتح`;
-          switchBtn.addEventListener('click', () => { setActiveInventory(inv.id); closeSettings(); });
-
-          const delBtn = document.createElement('button');
-          delBtn.className = "press-glow soft bg-red-700/20 hover:bg-red-700/28 border border-red-700/30 text-red-100 font-bold px-4 py-2 rounded-2xl text-sm";
-          delBtn.innerHTML = `<i class="fa-solid fa-trash ml-2 text-red-300"></i>حذف`;
-          delBtn.addEventListener('click', () => deleteInventory(inv.id));
-
-          right.appendChild(switchBtn);
-          right.appendChild(delBtn);
-
-          row.appendChild(left);
-          row.appendChild(right);
-          invListWrap.appendChild(row);
-        }
-      }
-
-      // ==========================
-      // UI helpers
-      // ==========================
       function setStockCounterColor(stockLen) {
         if (stockLen === 0) stockCountEl.className = "text-2xl font-extrabold text-red-400";
         else if (stockLen < 5) stockCountEl.className = "text-2xl font-extrabold text-amber-300";
         else stockCountEl.className = "text-2xl font-extrabold text-emerald-300";
       }
 
+      function displayResult(acc) {
+        if (!acc) return;
+        resultAreaEl.classList.remove('hidden');
+        emailDisplayEl.textContent = acc.email || '---';
+        passDisplayEl.textContent = acc.password || '---';
+        recDisplayEl.textContent = acc.recovery || 'غير متوفر';
+        urlBtnEl.href = acc.url && acc.url !== '' ? acc.url : '#';
+        timestampEl.textContent = new Date().toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      }
+
       function updateUI() {
         const s = S();
-        const stockLen = s.inventory.length;
-
-        stockCountEl.textContent = stockLen;
+        stockCountEl.textContent = s.inventory.length;
         pulledCountEl.textContent = s.pulledCounter;
-        setStockCounterColor(stockLen);
+        setStockCounterColor(s.inventory.length);
 
         const last = s.currentAccount || getLastPulled(activeInvId);
         if (last) {
@@ -828,19 +677,35 @@ email;pass;recovery;url"></textarea>
         }
       }
 
-      function displayResult(acc) {
-        if (!acc) return;
-        resultAreaEl.classList.remove('hidden');
-        emailDisplayEl.textContent = acc.email || '---';
-        passDisplayEl.textContent = acc.password || '---';
-        recDisplayEl.textContent = acc.recovery || 'غير متوفر';
-        urlBtnEl.href = acc.url && acc.url !== '' ? acc.url : '#';
+      function setActiveInventory(id){
+        if (!inventoriesMeta.some(x => x.id === id)) return;
+        activeInvId = id;
+        localStorage.setItem(ACTIVE_KEY, id);
 
-        const now = new Date();
-        timestampEl.textContent = now.toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        loadActive();
+        updateHeaderTitle();
+        buildTabs();
+        updateUI();
+        renderMoveButtons();
       }
 
-      // Parsing
+      function createNewInventory(){
+        flash(addInvBtn);
+        const name = prompt('اكتب اسم المخزون الجديد:');
+        if (!name || !String(name).trim()) { showToast('تم الإلغاء (اسم المخزون فارغ).', 'error'); return; }
+        const n = String(name).trim();
+        if (inventoriesMeta.some(x => x.name === n)) { showToast('هذا الاسم موجود بالفعل. اختر اسم مختلف.', 'error'); return; }
+
+        const id = 'inv_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,7);
+        inventoriesMeta.push({ id, name: n, type:'custom' });
+        localStorage.setItem(META_KEY, JSON.stringify(inventoriesMeta));
+        store[id] = { inventory: [], pulledCounter: 0, currentAccount: null };
+
+        buildTabs();
+        setActiveInventory(id);
+        showToast('تم إنشاء مخزون جديد ✅', 'success');
+      }
+
       function parseStandardLine(line) {
         const parts = line.split(';').map(p => p.trim());
         if (parts.length < 2) return { ok: false };
@@ -854,20 +719,11 @@ email;pass;recovery;url"></textarea>
 
       function addToStockInternal(standardText) {
         const s = S();
+        const stdLines = (standardText || '').replace(/\r/g, '').split('\n').map(l => l.trim()).filter(l => l.length >= 5);
 
-        const stdLines = (standardText || '')
-          .replace(/\r/g, '')
-          .split('\n')
-          .map(l => l.trim())
-          .filter(l => l.length >= 5);
+        let addedCount = 0, duplicateCount = 0, invalidCount = 0;
 
-        let addedCount = 0;
-        let duplicateCount = 0;
-        let invalidCount = 0;
-
-        function existsEmail(email){
-          return s.inventory.some(a => a.email === email);
-        }
+        function existsEmail(email){ return s.inventory.some(a => a.email === email); }
 
         for (const line of stdLines) {
           const parsed = parseStandardLine(line);
@@ -885,37 +741,24 @@ email;pass;recovery;url"></textarea>
       function addToStock() {
         flash(addBtn);
         const standard = bulkInputEl.value;
-
-        if (!standard.trim()) {
-          showToast('الحقل فارغ!', 'error');
-          return;
-        }
-
+        if (!standard.trim()) { showToast('الحقل فارغ!', 'error'); return; }
         const { addedCount, duplicateCount, invalidCount } = addToStockInternal(standard);
-
         bulkInputEl.value = '';
 
         const tabName = getInvMetaById(activeInvId)?.name || 'المخزون';
         let msg = `(${tabName}) تمت إضافة ${addedCount} حساب.`;
         if (duplicateCount) msg += ` (مكرر: ${duplicateCount})`;
         if (invalidCount) msg += ` (غير صالح: ${invalidCount})`;
-
         showToast(msg, addedCount ? 'success' : 'error');
       }
 
       function pullAccount() {
         flash(pullBtn);
         const s = S();
-
-        if (s.inventory.length === 0) {
-          showToast('المخزون فارغ.', 'error');
-          return;
-        }
-
+        if (s.inventory.length === 0) { showToast('المخزون فارغ.', 'error'); return; }
         const acc = s.inventory.splice(0, 1)[0];
         s.currentAccount = acc;
         s.pulledCounter++;
-
         saveActive();
         displayResult(acc);
         updateUI();
@@ -945,17 +788,11 @@ email;pass;recovery;url"></textarea>
       async function copyField(type) {
         const s = S();
         const acc = s.currentAccount || getLastPulled(activeInvId);
-        if (!acc) {
-          showToast('لا يوجد حساب مسحوب للنسخ.', 'error');
-          return;
-        }
-
-        let text = '';
-        let label = '';
+        if (!acc) { showToast('لا يوجد حساب مسحوب للنسخ.', 'error'); return; }
+        let text = '', label = '';
         if (type === 'email') { text = acc.email; label = 'الإيميل'; }
         else if (type === 'password') { text = acc.password; label = 'الباسورد'; }
         else { text = acc.recovery; label = 'التحقق'; }
-
         const ok = await copyText(String(text || ''));
         showToast(ok ? `تم نسخ ${label}` : 'فشل النسخ (جرّب HTTPS أو localhost)', ok ? 'copy' : 'error');
       }
@@ -964,10 +801,7 @@ email;pass;recovery;url"></textarea>
         flash(copyFullBtn);
         const s = S();
         const acc = s.currentAccount || getLastPulled(activeInvId);
-        if (!acc) {
-          showToast('لا يوجد حساب مسحوب لنسخ المعلومات.', 'error');
-          return;
-        }
+        if (!acc) { showToast('لا يوجد حساب مسحوب لنسخ المعلومات.', 'error'); return; }
 
         const textToCopy =
           `الايميل: ${acc.email}\n` +
@@ -984,7 +818,6 @@ email;pass;recovery;url"></textarea>
         const s = S();
         const acc = s.currentAccount || getLastPulled(activeInvId);
         if (!acc) { showToast('لا يوجد حساب مسحوب.', 'error'); return; }
-
         s.currentAccount = null;
         clearLastPulled(activeInvId);
         saveActive();
@@ -997,26 +830,17 @@ email;pass;recovery;url"></textarea>
         const s = S();
         const acc = s.currentAccount || getLastPulled(activeInvId);
         if (!acc) { showToast('لا يوجد حساب مسحوب للاسترجاع.', 'error'); return; }
-
-        if (!s.inventory.some(a => a.email === acc.email)) {
-          s.inventory.unshift(acc);
-        }
-
+        if (!s.inventory.some(a => a.email === acc.email)) s.inventory.unshift(acc);
         if (s.pulledCounter > 0) s.pulledCounter--;
         s.currentAccount = null;
         clearLastPulled(activeInvId);
-
         saveActive();
         updateUI();
         showToast('تم استرجاع الحساب إلى المخزون', 'success');
       }
 
       function moveAccountTo(targetInvId, targetLabel){
-        // فقط من الأساسي
-        if (activeInvId !== 'main') {
-          showToast('أزرار النقل تعمل من (الأساسي) فقط.', 'error');
-          return;
-        }
+        if (activeInvId !== 'main') { showToast('أزرار النقل تعمل من (الأساسي) فقط.', 'error'); return; }
 
         const sMain = store['main'] || S();
         const acc = sMain.currentAccount || getLastPulled('main');
@@ -1037,7 +861,6 @@ email;pass;recovery;url"></textarea>
         }
 
         sTarget.inventory.unshift(acc);
-
         activeInvId = targetInvId;
         saveActive();
 
@@ -1053,11 +876,8 @@ email;pass;recovery;url"></textarea>
         showToast(`تم نقل الحساب إلى مخزون ${targetLabel}`, 'success');
       }
 
-      // ✅ أزرار النقل الديناميكية: (النقل إلى Go / Gemini / وأي مخزون جديد)
       function renderMoveButtons(){
         moveButtonsWrap.innerHTML = '';
-
-        // تظهر فقط في الأساسي
         if (activeInvId !== 'main') return;
 
         const targets = inventoriesMeta.filter(x => x.id !== 'main');
@@ -1075,39 +895,22 @@ email;pass;recovery;url"></textarea>
       async function importTxtFile(file) {
         if (!file) return;
         flash(importBtn);
-
-        if (!file.name.toLowerCase().endsWith('.txt')) {
-          showToast('الرجاء اختيار ملف TXT فقط', 'error');
-          return;
-        }
-
+        if (!file.name.toLowerCase().endsWith('.txt')) { showToast('الرجاء اختيار ملف TXT فقط', 'error'); return; }
         try {
           const content = await file.text();
           const { addedCount, duplicateCount, invalidCount } = addToStockInternal(content);
-
           let msg = `تم استيراد الملف: +${addedCount}`;
           if (duplicateCount) msg += ` (مكرر: ${duplicateCount})`;
           if (invalidCount) msg += ` (غير صالح: ${invalidCount})`;
-
           showToast(msg, addedCount ? 'success' : 'error');
-        } catch (e) {
-          showToast('فشل قراءة الملف', 'error');
-        }
+        } catch (e) { showToast('فشل قراءة الملف', 'error'); }
       }
 
       function exportStockToTxt() {
         flash(exportBtn);
         const s = S();
-
-        if (!s.inventory.length) {
-          showToast('المخزون فارغ.', 'error');
-          return;
-        }
-
-        const content = s.inventory
-          .map(acc => `${acc.email};${acc.password};${acc.recovery};${acc.url}`)
-          .join('\n');
-
+        if (!s.inventory.length) { showToast('المخزون فارغ.', 'error'); return; }
+        const content = s.inventory.map(acc => `${acc.email};${acc.password};${acc.recovery};${acc.url}`).join('\n');
         const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
 
@@ -1120,14 +923,90 @@ email;pass;recovery;url"></textarea>
         document.body.appendChild(a);
         a.click();
         a.remove();
-
         URL.revokeObjectURL(url);
         showToast(`تم تصدير ${s.inventory.length} حساب`, 'success');
       }
 
-      // ==========================
-      // Links (إزالة + تحريك ↑ ↓)
-      // ==========================
+      // ===== Settings modal =====
+      function openSettings(){
+        flash(settingsBtn);
+        renderSettingsInventories();
+        settingsModal.classList.add('show');
+        document.body.classList.add('modal-open');
+      }
+      function closeSettings(){
+        settingsModal.classList.remove('show');
+        document.body.classList.remove('modal-open');
+      }
+
+      function deleteInventory(invId){
+        const meta = getInvMetaById(invId);
+        if (!meta) return;
+        if (!confirm(`هل تريد حذف مخزون: (${meta.name}) من التخزين؟\nهذا سيحذف الإيميلات والعدادات الخاصة به فقط.`)) return;
+
+        const keys = keysFor(invId);
+        localStorage.removeItem(keys.data);
+        localStorage.removeItem(keys.pulled);
+        localStorage.removeItem(keys.last);
+        localStorage.removeItem(keys.undo);
+
+        inventoriesMeta = inventoriesMeta.filter(x => x.id !== invId);
+
+        if (!inventoriesMeta.some(x => x.id === 'main')) inventoriesMeta.unshift({ id:'main', name:'الأساسي', type:'legacy-main' });
+
+        const go = inventoriesMeta.find(x => x.id === GO_ID);
+        if (!go) inventoriesMeta.push({ id:GO_ID, name:'Go', type:'legacy-gemini' });
+        else { go.name='Go'; go.type='legacy-gemini'; }
+
+        if (!inventoriesMeta.some(x => x.id === NEW_GEMINI_ID)) inventoriesMeta.push({ id:NEW_GEMINI_ID, name:'Gemini', type:'custom' });
+
+        localStorage.setItem(META_KEY, JSON.stringify(inventoriesMeta));
+
+        if (activeInvId === invId) {
+          activeInvId = inventoriesMeta[0].id;
+          localStorage.setItem(ACTIVE_KEY, activeInvId);
+        }
+
+        delete store[invId];
+        buildTabs();
+        setActiveInventory(activeInvId);
+        renderSettingsInventories();
+        showToast('تم حذف المخزون ✅', 'success');
+      }
+
+      function renderSettingsInventories(){
+        invListWrap.innerHTML = '';
+        for (const inv of inventoriesMeta) {
+          const row = document.createElement('div');
+          row.className = "flex flex-col md:flex-row gap-2 md:items-center md:justify-between bg-slate-950/25 border border-slate-700/40 rounded-2xl p-3";
+
+          const left = document.createElement('div');
+          left.className = "text-sm text-slate-100";
+          left.innerHTML = `<div class="font-extrabold">${inv.name}</div><div class="text-xs text-slate-300">ID: ${inv.id}</div>`;
+
+          const right = document.createElement('div');
+          right.className = "flex gap-2";
+
+          const switchBtn = document.createElement('button');
+          switchBtn.className = "press-glow soft bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/60 text-white font-bold px-4 py-2 rounded-2xl text-sm";
+          switchBtn.innerHTML = `<i class="fa-solid fa-arrow-right-arrow-left ml-2 text-slate-200"></i>فتح`;
+          switchBtn.addEventListener('click', () => { setActiveInventory(inv.id); closeSettings(); });
+
+          const delBtn = document.createElement('button');
+          delBtn.className = "press-glow soft bg-red-700/20 hover:bg-red-700/28 border border-red-700/30 text-red-100 font-bold px-4 py-2 rounded-2xl text-sm";
+          delBtn.innerHTML = `<i class="fa-solid fa-trash ml-2 text-red-300"></i>حذف`;
+          delBtn.addEventListener('click', () => deleteInventory(inv.id));
+
+          right.appendChild(switchBtn);
+          right.appendChild(delBtn);
+
+          row.appendChild(left);
+          row.appendChild(right);
+          invListWrap.appendChild(row);
+        }
+      }
+
+      // ===== Links (copy/open/remove/up/down) + ✅ إصلاح الجوال/السكرول =====
       function loadLinks(){
         const raw = localStorage.getItem(LINKS_KEY);
         quickLinks = raw ? safeJsonParse(raw, []) : [];
@@ -1141,17 +1020,17 @@ email;pass;recovery;url"></textarea>
           saveLinks();
         }
       }
-      function saveLinks(){
-        localStorage.setItem(LINKS_KEY, JSON.stringify(quickLinks));
-      }
+      function saveLinks(){ localStorage.setItem(LINKS_KEY, JSON.stringify(quickLinks)); }
 
       function openLinks(){
         flash(linksBtn);
         renderLinks();
         linksModal.classList.add('show');
+        document.body.classList.add('modal-open');
       }
       function closeLinks(){
         linksModal.classList.remove('show');
+        document.body.classList.remove('modal-open');
       }
 
       function swapLinks(i, j){
@@ -1180,14 +1059,15 @@ email;pass;recovery;url"></textarea>
         for (let idx = 0; idx < quickLinks.length; idx++) {
           const item = quickLinks[idx];
 
+          // ✅ مهم: صار عمود في الجوال + صف في الشاشات الكبيرة
           const row = document.createElement('div');
-          row.className = "bg-slate-950/20 border border-slate-700/40 rounded-2xl p-3 flex items-center justify-between gap-3";
+          row.className = "bg-slate-950/20 border border-slate-700/40 rounded-2xl p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3";
 
           const left = document.createElement('button');
           left.className = "min-w-0 text-right flex-1";
           left.innerHTML = `
             <div class="font-extrabold text-white truncate hover:underline" title="اضغط للنسخ">${item.name || 'رابط'}</div>
-            <div class="text-xs text-slate-300 mt-1 break-all">${item.url || ''}</div>
+            <div class="text-xs text-slate-300 mt-1 break-words">${item.url || ''}</div>
           `;
           left.addEventListener('click', async () => {
             const ok = await copyText(String(item.url || ''));
@@ -1195,7 +1075,8 @@ email;pass;recovery;url"></textarea>
           });
 
           const right = document.createElement('div');
-          right.className = "flex gap-2 flex-shrink-0 flex-wrap";
+          // ✅ ترتيب الأزرار أفضل للجوال
+          right.className = "flex gap-2 flex-shrink-0 flex-wrap justify-start sm:justify-end";
 
           const upBtn = document.createElement('button');
           upBtn.className = "press-glow soft bg-slate-800/55 hover:bg-slate-700/60 border border-slate-700/60 text-white font-bold px-3 py-2 rounded-2xl text-sm";
@@ -1249,13 +1130,10 @@ email;pass;recovery;url"></textarea>
 
       function addLink(){
         flash(addLinkBtn);
-
         const name = prompt('اسم الرابط:');
         if (!name || !String(name).trim()) { showToast('تم الإلغاء (الاسم فارغ).', 'error'); return; }
-
         const urlIn = prompt('الرابط:');
         if (!urlIn || !String(urlIn).trim()) { showToast('تم الإلغاء (الرابط فارغ).', 'error'); return; }
-
         const url = normalizeUrl(urlIn);
         if (!url) { showToast('الرابط غير صحيح.', 'error'); return; }
 
@@ -1266,7 +1144,7 @@ email;pass;recovery;url"></textarea>
         showToast('تمت إضافة الرابط ✅', 'success');
       }
 
-      // Events
+      // ===== Events =====
       toggleBtn.addEventListener('click', () => { flash(toggleBtn); inputSectionEl.classList.toggle('hidden'); });
       clearBtn.addEventListener('click', clearStorage);
       addBtn.addEventListener('click', addToStock);
@@ -1293,25 +1171,19 @@ email;pass;recovery;url"></textarea>
 
       settingsBtn.addEventListener('click', openSettings);
       closeSettingsBtn.addEventListener('click', closeSettings);
-      settingsModal.addEventListener('click', (e) => {
-        if (e.target === settingsModal) closeSettings();
-      });
+      settingsModal.addEventListener('click', (e) => { if (e.target === settingsModal) closeSettings(); });
 
       linksBtn.addEventListener('click', openLinks);
       closeLinksBtn.addEventListener('click', closeLinks);
       addLinkBtn.addEventListener('click', addLink);
-      linksModal.addEventListener('click', (e) => {
-        if (e.target === linksModal) closeLinks();
-      });
+      linksModal.addEventListener('click', (e) => { if (e.target === linksModal) closeLinks(); });
 
-      // ==========================
-      // Initial load
-      // ==========================
+      // ===== Init =====
       window.addEventListener('load', () => {
         ensureMeta();
         loadLinks();
 
-        // حمّل كل المخازن مرة حتى النقل وغيره يشتغل
+        // حمّل كل المخازن مرة
         for (const inv of inventoriesMeta) {
           const prev = activeInvId;
           activeInvId = inv.id;
@@ -1323,9 +1195,7 @@ email;pass;recovery;url"></textarea>
         setActiveInventory(activeInvId);
       });
 
-      /* =========================
-         Snow
-         ========================= */
+      // ===== Snow =====
       const canvas = document.getElementById('snowCanvas');
       const ctx = canvas.getContext('2d', { alpha: true });
       let W = 0, H = 0;
