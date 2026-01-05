@@ -55,14 +55,6 @@
       100%{ box-shadow: 0 0 0 3px rgba(255,255,255,.08), 0 0 22px rgba(56,189,248,.20); }
     }
 
-    /* نص يلمع (الكلام التوضيحي) */
-    .glow-text{
-      color:#cbd5e1;
-      text-shadow:
-        0 0 10px rgba(56,189,248,.18),
-        0 0 22px rgba(16,185,129,.10);
-    }
-
     /* حقول النسخ */
     .field-copy{
       cursor:pointer;
@@ -107,6 +99,49 @@
       padding: 16px;
     }
     .modal-backdrop.show{ display:flex; }
+
+    /* Badge */
+    .nbb-verified{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,.18);
+      background: rgba(2,6,23,.35);
+    }
+    .nbb-badge{
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      border: 1px solid rgba(148,163,184,.22);
+      animation: badgeShift 1.8s ease-in-out infinite;
+      box-shadow: 0 0 18px rgba(59,130,246,.10);
+    }
+    @keyframes badgeShift{
+      0%   { background: rgba(59,130,246,.30); box-shadow: 0 0 18px rgba(59,130,246,.18); }
+      50%  { background: rgba(16,185,129,.28); box-shadow: 0 0 18px rgba(16,185,129,.18); }
+      100% { background: rgba(168,85,247,.28); box-shadow: 0 0 18px rgba(168,85,247,.18); }
+    }
+    .nbb-fire{
+      position: relative;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .nbb-fire i{
+      filter: drop-shadow(0 0 10px rgba(251,146,60,.22));
+      animation: flame 1.1s ease-in-out infinite;
+      transform-origin: 50% 60%;
+    }
+    @keyframes flame{
+      0%{ transform: translateY(0) scale(1); opacity: .9; }
+      50%{ transform: translateY(-2px) scale(1.05); opacity: 1; }
+      100%{ transform: translateY(0) scale(1); opacity: .9; }
+    }
   </style>
 </head>
 
@@ -116,25 +151,36 @@
   <canvas id="snowCanvas"></canvas>
 
   <header class="w-full max-w-5xl mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-5 relative z-10">
-    <div class="space-y-1">
+    <div class="space-y-2">
       <h1 class="text-3xl font-extrabold text-blue-400 flex items-center gap-3">
         <i class="fa-solid fa-boxes-stacked"></i>
-        <span id="titleName">المخزون الذكي</span>
+        <span id="titleName">المخزون</span>
       </h1>
-      <p class="text-slate-400 text-sm">نظام إدارة وتوزيع الحسابات التلقائي</p>
-      <p class="glow-text text-xs">
-        ملاحظة: النسخ يعمل أفضل على HTTPS أو localhost — وتمت إزالة الحركات الثقيلة لتسريع الموقع ✨
-      </p>
+
+      <div class="nbb-verified w-fit">
+        <span class="text-slate-200 font-bold text-sm">مصمم المخزون نبيل</span>
+        <span class="nbb-badge" title="موثق">
+          <i class="fa-solid fa-check text-[10px] text-white"></i>
+        </span>
+        <span class="nbb-fire" title="🔥">
+          <i class="fa-solid fa-fire text-amber-300"></i>
+        </span>
+      </div>
     </div>
 
     <div class="flex gap-3 w-full md:w-auto items-center">
-      <!-- تبويبات ديناميكية + زر + + إعدادات -->
+      <!-- تبويبات ديناميكية + زر إضافة مخزون + روابط + إعدادات -->
       <div class="flex gap-2 items-center flex-wrap">
         <div id="tabsWrap" class="flex gap-2 flex-wrap"></div>
 
         <button id="addInvBtn" title="إضافة مخزون جديد"
           class="press-glow soft tab-pill px-4 py-2 rounded-2xl text-sm font-black text-slate-100">
-          <i class="fa-solid fa-plus ml-2 text-emerald-300"></i> +
+          <i class="fa-solid fa-plus ml-2 text-emerald-300"></i> إضافة مخزون
+        </button>
+
+        <button id="linksBtn" title="روابط"
+          class="press-glow soft tab-pill px-4 py-2 rounded-2xl text-sm font-bold text-slate-100">
+          <i class="fa-solid fa-link ml-2 text-sky-300"></i> روابط
         </button>
 
         <button id="settingsBtn" title="إعدادات"
@@ -156,90 +202,6 @@
 
   <main class="w-full max-w-5xl space-y-6 relative z-10">
 
-    <!-- روابط سريعة (جديد) -->
-    <section class="glass-panel soft p-5 rounded-3xl shadow-xl">
-      <div class="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
-        <div class="flex items-center gap-2">
-          <i class="fa-solid fa-link text-sky-300"></i>
-          <span class="font-extrabold text-white">روابط سريعة</span>
-          <span class="text-xs glow-text">تظهر بالرئيسية + فتح مباشر + نسخ</span>
-        </div>
-
-        <div class="flex gap-2">
-          <button id="addLinkBtn"
-            class="press-glow soft bg-sky-700/30 hover:bg-sky-700/40 border border-sky-700/35 text-sky-100 font-bold px-5 py-3 rounded-2xl flex items-center gap-2">
-            <i class="fa-solid fa-plus text-sky-200"></i>
-            <span>إضافة رابط</span>
-          </button>
-
-          <button id="clearLinksBtn"
-            class="press-glow soft bg-slate-800/55 hover:bg-slate-700/60 border border-slate-700/60 text-white font-bold px-5 py-3 rounded-2xl flex items-center gap-2">
-            <i class="fa-solid fa-broom text-slate-200"></i>
-            <span>مسح الروابط</span>
-          </button>
-        </div>
-      </div>
-
-      <div id="linksWrap" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3"></div>
-
-      <p class="text-[11px] glow-text mt-3">
-        ✳️ اضغط على اسم الرابط حتى يفتح، أو استخدم زر النسخ لنسخ الرابط.
-      </p>
-    </section>
-
-    <!-- أدوات ذكية سريعة -->
-    <section class="glass-panel soft p-5 rounded-3xl shadow-xl">
-      <div class="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
-        <div class="flex items-center gap-2">
-          <i class="fa-solid fa-sparkles text-amber-300"></i>
-          <span class="font-extrabold text-white">أدوات ذكية</span>
-          <span class="text-xs glow-text">تسريع الشغل + منع التكرار + بحث سريع</span>
-        </div>
-
-        <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-          <div class="relative flex-1 md:w-72">
-            <input id="searchInput" type="text"
-              class="w-full bg-slate-950/30 text-sm text-white px-4 py-3 rounded-2xl border border-slate-700/60 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition placeholder-slate-500"
-              placeholder="بحث داخل المخزون (بالإيميل)..." />
-            <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
-          </div>
-
-          <button id="smartStatsBtn"
-            class="press-glow soft bg-slate-800/55 hover:bg-slate-700/60 border border-slate-700/60 text-white font-bold px-5 py-3 rounded-2xl flex items-center justify-center gap-2">
-            <i class="fa-solid fa-chart-simple text-emerald-300"></i>
-            <span>ملخص ذكي</span>
-          </button>
-
-          <button id="undoPullBtn"
-            class="press-glow soft bg-slate-800/55 hover:bg-slate-700/60 border border-slate-700/60 text-white font-bold px-5 py-3 rounded-2xl flex items-center justify-center gap-2">
-            <i class="fa-solid fa-rotate-left text-amber-300"></i>
-            <span>تراجع عن آخر سحب</span>
-          </button>
-        </div>
-      </div>
-
-      <div id="smartPanel" class="hidden mt-4 bg-slate-950/25 border border-slate-700/40 rounded-2xl p-4">
-        <div class="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
-          <div class="text-sm text-slate-200">
-            <div class="font-bold mb-1">📌 ملخص المخزون الحالي</div>
-            <div class="text-xs glow-text" id="smartSummary">---</div>
-          </div>
-          <div class="flex gap-2">
-            <button id="copyCompactBtn"
-              class="press-glow soft bg-indigo-600/70 hover:bg-indigo-600 text-white font-bold px-4 py-2 rounded-2xl flex items-center gap-2">
-              <i class="fa-solid fa-clipboard text-indigo-100"></i>
-              <span>نسخ آخر حساب (سطر واحد)</span>
-            </button>
-            <button id="clearSearchBtn"
-              class="press-glow soft bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/60 text-white font-bold px-4 py-2 rounded-2xl flex items-center gap-2">
-              <i class="fa-solid fa-eraser text-slate-200"></i>
-              <span>مسح البحث</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <section class="glass-panel soft p-6 rounded-3xl shadow-xl">
       <div class="flex justify-between items-center mb-4 gap-3">
         <h2 class="text-xl font-bold text-white flex items-center gap-2">
@@ -259,21 +221,6 @@
           placeholder="ضع القائمة هنا بالتنسيق:
 email;pass;recovery;url
 email;pass;recovery;url"></textarea>
-
-        <!-- خانة اختيارية سريعة -->
-        <div class="bg-slate-950/15 border border-slate-700/40 rounded-2xl p-3">
-          <div class="flex items-center gap-2 mb-2 text-slate-200">
-            <i class="fa-solid fa-bolt text-amber-300"></i>
-            <span class="font-bold">خانة إضافية (اختياري) — تنسيق سريع</span>
-          </div>
-          <p class="text-xs glow-text mb-2">
-            كل سطر: <span class="font-mono text-slate-200">email@gmail.comPASSWORD</span> (بدون فواصل)
-          </p>
-          <textarea id="quickInput" rows="3"
-            class="w-full bg-slate-950/30 text-sm text-white p-4 rounded-2xl border border-slate-700/60 focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 outline-none transition placeholder-slate-500"
-            placeholder="مثال:
-oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
-        </div>
 
         <div class="flex flex-col md:flex-row justify-between gap-3">
           <button id="clearBtn"
@@ -357,7 +304,6 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
             <div class="soft bg-slate-950/25 p-3 rounded-2xl border border-slate-700/60 flex justify-between items-center gap-3">
               <div>
                 <label class="text-xs text-slate-400 block mb-1">رابط الرسائل (Webhook)</label>
-                <span class="text-xs glow-text">للوصول لكود التحقق</span>
               </div>
               <a id="urlBtn" href="#" target="_blank" rel="noopener"
                  class="press-glow soft bg-indigo-600 hover:bg-indigo-500 text-white text-sm px-4 py-2 rounded-xl transition shadow-lg shadow-indigo-600/15">
@@ -373,7 +319,7 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
               <span>نسخ المعلومات كاملة (شامل)</span>
             </button>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-2">
               <button id="restoreBtn"
                 class="press-glow soft bg-emerald-700/30 hover:bg-emerald-700/40 border border-emerald-700/35 text-emerald-100 font-bold py-3 rounded-2xl flex items-center justify-center gap-2">
                 <i class="fa-solid fa-rotate-left text-emerald-300"></i>
@@ -386,15 +332,20 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
                 <span>حذف من الشاشة</span>
               </button>
 
-              <!-- زر نقل للمخزون الثاني (يبقى مثل ما هو) -->
-              <button id="moveToGeminiBtn"
+              <button id="moveToGoBtn"
                 class="press-glow soft bg-purple-700/25 hover:bg-purple-700/35 border border-purple-700/35 text-purple-100 font-bold py-3 rounded-2xl flex items-center justify-center gap-2">
                 <i class="fa-solid fa-right-left text-purple-300"></i>
+                <span>نقل إلى Go</span>
+              </button>
+
+              <button id="moveToGeminiBtn"
+                class="press-glow soft bg-sky-700/25 hover:bg-sky-700/35 border border-sky-700/35 text-sky-100 font-bold py-3 rounded-2xl flex items-center justify-center gap-2">
+                <i class="fa-solid fa-right-left text-sky-300"></i>
                 <span>نقل إلى Gemini</span>
               </button>
             </div>
 
-            <p class="text-center text-[11px] glow-text">
+            <p class="text-center text-[11px] text-slate-300">
               ✅ آخر حساب مسحوب يبقى محفوظ حتى لو خرجت ورجعت لاحقاً.
             </p>
           </div>
@@ -412,14 +363,14 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
     <span id="toastMsg">تم العملية بنجاح</span>
   </div>
 
-  <!-- Settings Modal (جديد) -->
+  <!-- Settings Modal -->
   <div id="settingsModal" class="modal-backdrop">
     <div class="glass-panel soft w-full max-w-2xl rounded-3xl p-5 border border-slate-700/50 shadow-2xl">
       <div class="flex justify-between items-center mb-3">
         <div class="flex items-center gap-2">
           <i class="fa-solid fa-gear text-slate-300"></i>
           <span class="font-extrabold text-white">إعدادات المخزون</span>
-          <span class="text-xs glow-text">حذف مخزون من التخزين</span>
+          <span class="text-xs text-slate-300">حذف مخزون من التخزين</span>
         </div>
         <button id="closeSettingsBtn" class="press-glow soft tab-pill px-4 py-2 rounded-2xl text-sm font-bold">
           إغلاق
@@ -430,10 +381,39 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         <div class="text-sm text-slate-200 font-bold mb-2">📦 المخازن الحالية</div>
         <div id="invListWrap" class="space-y-2"></div>
 
-        <p class="text-[11px] glow-text mt-3">
+        <p class="text-[11px] text-slate-300 mt-3">
           ⚠️ حذف المخزون يعني حذف بياناته من localStorage (الإيميلات الخاصة به)، ولا يؤثر على المخازن الأخرى.
         </p>
       </div>
+    </div>
+  </div>
+
+  <!-- Links Modal (جديد حسب طلبك) -->
+  <div id="linksModal" class="modal-backdrop">
+    <div class="glass-panel soft w-full max-w-2xl rounded-3xl p-5 border border-slate-700/50 shadow-2xl">
+      <div class="flex justify-between items-center mb-3">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-link text-sky-300"></i>
+          <span class="font-extrabold text-white">روابط</span>
+          <span class="text-xs text-slate-300">اضغط على اسم الرابط لنسخ — وزر فتح للفتح</span>
+        </div>
+        <div class="flex gap-2">
+          <button id="addLinkBtn"
+            class="press-glow soft tab-pill px-4 py-2 rounded-2xl text-sm font-bold text-slate-100"
+            title="إضافة رابط">
+            <i class="fa-solid fa-plus ml-2 text-sky-200"></i> +
+          </button>
+          <button id="closeLinksBtn" class="press-glow soft tab-pill px-4 py-2 rounded-2xl text-sm font-bold">
+            إغلاق
+          </button>
+        </div>
+      </div>
+
+      <div id="linksWrap" class="space-y-2"></div>
+
+      <p class="text-[11px] text-slate-300 mt-3">
+        ✳️ عند الضغط على اسم الرابط: ينسخ مباشرة.
+      </p>
     </div>
   </div>
 
@@ -449,21 +429,18 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
       const addInvBtn = document.getElementById('addInvBtn');
       const settingsBtn = document.getElementById('settingsBtn');
 
+      const linksBtn = document.getElementById('linksBtn');
+      const linksModal = document.getElementById('linksModal');
+      const closeLinksBtn = document.getElementById('closeLinksBtn');
+      const addLinkBtn = document.getElementById('addLinkBtn');
+      const linksWrap = document.getElementById('linksWrap');
+
       const settingsModal = document.getElementById('settingsModal');
       const closeSettingsBtn = document.getElementById('closeSettingsBtn');
       const invListWrap = document.getElementById('invListWrap');
 
       const inputSectionEl = document.getElementById('inputSection');
       const bulkInputEl = document.getElementById('bulkInput');
-      const quickInputEl = document.getElementById('quickInput');
-
-      const searchInputEl = document.getElementById('searchInput');
-      const smartStatsBtn = document.getElementById('smartStatsBtn');
-      const smartPanel = document.getElementById('smartPanel');
-      const smartSummary = document.getElementById('smartSummary');
-      const clearSearchBtn = document.getElementById('clearSearchBtn');
-      const copyCompactBtn = document.getElementById('copyCompactBtn');
-      const undoPullBtn = document.getElementById('undoPullBtn');
 
       const resultAreaEl = document.getElementById('resultArea');
       const timestampEl = document.getElementById('timestamp');
@@ -481,16 +458,13 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
 
       const restoreBtn = document.getElementById('restoreBtn');
       const deleteLastBtn = document.getElementById('deleteLastBtn');
+
+      const moveToGoBtn = document.getElementById('moveToGoBtn');
       const moveToGeminiBtn = document.getElementById('moveToGeminiBtn');
 
       const importBtn = document.getElementById('importBtn');
       const importFile = document.getElementById('importFile');
       const exportBtn = document.getElementById('exportBtn');
-
-      // Links (جديد)
-      const addLinkBtn = document.getElementById('addLinkBtn');
-      const clearLinksBtn = document.getElementById('clearLinksBtn');
-      const linksWrap = document.getElementById('linksWrap');
 
       const toast = document.getElementById('toast');
       const toastMsg = document.getElementById('toastMsg');
@@ -502,6 +476,11 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
       // ==========================
       const META_KEY = 'smartInv_inventories_meta_v1';
       const ACTIVE_KEY = 'smartInv_activeInventory_v1';
+
+      // IDs حسب طلبك:
+      // - المخزون القديم الذي كان اسمه Gemini صار اسمه Go (نفس الـ id والـ keys حتى لا تضيع الإيميلات)
+      const GO_ID = 'gemini';              // legacy keys smartGemini_*
+      const NEW_GEMINI_ID = 'gemini_new';  // مخزون ثالث جديد باسم Gemini
 
       // Legacy keys (لا نلمسها حتى ما ينحذف القديم)
       const LEGACY_KEYS = {
@@ -517,7 +496,7 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
       let store = {};
 
       // Links storage (global)
-      const LINKS_KEY = 'smartInv_quickLinks_v1';
+      const LINKS_KEY = 'smartInv_quickLinks_v2';
       let quickLinks = [];
 
       // Utils
@@ -584,7 +563,6 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
       function normalizeUrl(u){
         const url = String(u || '').trim();
         if(!url) return '';
-        // إذا المستخدم كتب بدون http
         if (!/^https?:\/\//i.test(url)) return 'https://' + url;
         return url;
       }
@@ -634,7 +612,6 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         s.inventory = data ? safeJsonParse(data, []) : [];
         s.pulledCounter = pulled ? Number(pulled) || 0 : 0;
 
-        // current account من last
         const last = localStorage.getItem(keys.last);
         s.currentAccount = last ? safeJsonParse(last, null) : null;
       }
@@ -650,38 +627,42 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         localStorage.removeItem(keys.last);
       }
 
-      function setUndo(id, obj){
-        const keys = keysFor(id);
-        localStorage.setItem(keys.undo, JSON.stringify(obj || null));
-      }
-      function getUndo(id){
-        const keys = keysFor(id);
-        const v = localStorage.getItem(keys.undo);
-        return v ? safeJsonParse(v, null) : null;
-      }
-
       // ==========================
       // Meta init / migration
       // ==========================
       function ensureMeta(){
         const raw = localStorage.getItem(META_KEY);
-        if (raw) {
-          inventoriesMeta = safeJsonParse(raw, []);
-        }
+        if (raw) inventoriesMeta = safeJsonParse(raw, []);
 
-        // إذا أول مرة أو فاضي
         if (!Array.isArray(inventoriesMeta) || inventoriesMeta.length === 0) {
           inventoriesMeta = [
-            { id:'main',   name:'الأساسي', type:'legacy-main' },
-            { id:'gemini', name:'Gemini',  type:'legacy-gemini' }
+            { id:'main', name:'الأساسي', type:'legacy-main' },
+            // كان Gemini وصار Go (نفس الـ id legacy-gemini للحفاظ على البيانات)
+            { id:GO_ID, name:'Go', type:'legacy-gemini' },
+            // مخزون ثالث جديد باسم Gemini
+            { id:NEW_GEMINI_ID, name:'Gemini', type:'custom' }
           ];
           localStorage.setItem(META_KEY, JSON.stringify(inventoriesMeta));
         } else {
-          // تأكد أن الرئيسي والجيميني موجودين (لو أحد حذفهم من meta بالغلط)
-          const hasMain = inventoriesMeta.some(x => x.id === 'main');
-          const hasGem  = inventoriesMeta.some(x => x.id === 'gemini');
-          if (!hasMain) inventoriesMeta.unshift({ id:'main', name:'الأساسي', type:'legacy-main' });
-          if (!hasGem)  inventoriesMeta.push({ id:'gemini', name:'Gemini', type:'legacy-gemini' });
+          // تأكد وجود main
+          if (!inventoriesMeta.some(x => x.id === 'main')) {
+            inventoriesMeta.unshift({ id:'main', name:'الأساسي', type:'legacy-main' });
+          }
+
+          // تأكد وجود Go (legacy gemini) + تأكيد اسمه Go (بدون حذف البيانات)
+          const go = inventoriesMeta.find(x => x.id === GO_ID);
+          if (!go) {
+            inventoriesMeta.push({ id:GO_ID, name:'Go', type:'legacy-gemini' });
+          } else {
+            go.name = 'Go';
+            go.type = 'legacy-gemini';
+          }
+
+          // تأكد وجود Gemini الجديد
+          if (!inventoriesMeta.some(x => x.id === NEW_GEMINI_ID)) {
+            inventoriesMeta.push({ id:NEW_GEMINI_ID, name:'Gemini', type:'custom' });
+          }
+
           localStorage.setItem(META_KEY, JSON.stringify(inventoriesMeta));
         }
 
@@ -693,7 +674,6 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
           localStorage.setItem(ACTIVE_KEY, activeInvId);
         }
 
-        // جهّز store لكل المخازن
         inventoriesMeta.forEach(m => {
           if (!store[m.id]) store[m.id] = { inventory: [], pulledCounter: 0, currentAccount: null };
         });
@@ -705,21 +685,20 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         activeInvId = id;
         localStorage.setItem(ACTIVE_KEY, id);
 
-        // Load & UI
         loadActive();
         updateHeaderTitle();
         buildTabs();
         updateUI();
-        showToast(`تم التبديل إلى: ${getInvMetaById(id)?.name || id}`, 'info');
 
-        // زر النقل يبقى يظهر فقط في "الأساسي"
-        moveToGeminiBtn.style.display = (activeInvId === 'main') ? '' : 'none';
+        // أزرار النقل تظهر فقط في "الأساسي"
+        const showMove = (activeInvId === 'main');
+        moveToGoBtn.style.display = showMove ? '' : 'none';
+        moveToGeminiBtn.style.display = showMove ? '' : 'none';
       }
 
       function updateHeaderTitle(){
-        const meta = getInvMetaById(activeInvId);
-        const name = meta ? meta.name : 'المخزون';
-        titleNameEl.textContent = `المخزون الذكي — ${name}`;
+        // حسب طلبك: الاسم العلوي "المخزون" فقط
+        titleNameEl.textContent = 'المخزون';
       }
 
       function buildTabs(){
@@ -730,11 +709,12 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
           btn.className = "press-glow soft tab-pill px-4 py-2 rounded-2xl text-sm font-bold text-slate-100";
           if (inv.id === activeInvId) btn.classList.add('tab-active');
 
-          // أيقونات بسيطة
           let icon = 'fa-layer-group';
           let iconColor = 'text-blue-300';
-          if (inv.id === 'gemini') { icon = 'fa-wand-magic-sparkles'; iconColor = 'text-purple-300'; }
-          if (inv.id !== 'main' && inv.id !== 'gemini') { icon = 'fa-box'; iconColor = 'text-emerald-300'; }
+
+          if (inv.id === GO_ID) { icon = 'fa-bolt'; iconColor = 'text-emerald-300'; }          // Go
+          if (inv.id === NEW_GEMINI_ID) { icon = 'fa-wand-magic-sparkles'; iconColor = 'text-sky-300'; } // Gemini الجديد
+          if (inv.id !== 'main' && inv.id !== GO_ID && inv.id !== NEW_GEMINI_ID) { icon = 'fa-box'; iconColor = 'text-amber-300'; }
 
           btn.innerHTML = `<i class="fa-solid ${icon} ml-2 ${iconColor}"></i>${inv.name}`;
           btn.addEventListener('click', () => setActiveInventory(inv.id));
@@ -751,7 +731,6 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
           return;
         }
 
-        // منع تكرار الاسم (اختياري)
         const n = String(name).trim();
         if (inventoriesMeta.some(x => x.name === n)) {
           showToast('هذا الاسم موجود بالفعل. اختر اسم مختلف.', 'error');
@@ -762,7 +741,6 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         inventoriesMeta.push({ id, name: n, type:'custom' });
         localStorage.setItem(META_KEY, JSON.stringify(inventoriesMeta));
 
-        // جهّز store
         store[id] = { inventory: [], pulledCounter: 0, currentAccount: null };
 
         buildTabs();
@@ -783,45 +761,37 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         const meta = getInvMetaById(invId);
         if (!meta) return;
 
-        // تأكيد قوي
         if (!confirm(`هل تريد حذف مخزون: (${meta.name}) من التخزين؟\nهذا سيحذف الإيميلات والعدادات الخاصة به فقط.`)) return;
 
-        // احذف keys
         const keys = keysFor(invId);
         localStorage.removeItem(keys.data);
         localStorage.removeItem(keys.pulled);
         localStorage.removeItem(keys.last);
         localStorage.removeItem(keys.undo);
 
-        // إذا legacy main/gemini: نسمح بالحذف من التخزين أيضاً (حسب طلبك)
-        // لكن نبقي meta موجود؟ المستخدم يريد "حذف المخزون من الإعدادات" يعني إزالة التبويب أيضاً.
         inventoriesMeta = inventoriesMeta.filter(x => x.id !== invId);
 
-        // لا نخلي meta فاضية
-        if (inventoriesMeta.length === 0) {
-          inventoriesMeta = [
-            { id:'main',   name:'الأساسي', type:'legacy-main' },
-            { id:'gemini', name:'Gemini',  type:'legacy-gemini' }
-          ];
+        // لا نخلي meta فاضية + ضمان رجوع الرئيسي + Go + Gemini
+        if (!inventoriesMeta.some(x => x.id === 'main')) {
+          inventoriesMeta.unshift({ id:'main', name:'الأساسي', type:'legacy-main' });
+        }
+        if (!inventoriesMeta.some(x => x.id === GO_ID)) {
+          inventoriesMeta.push({ id:GO_ID, name:'Go', type:'legacy-gemini' });
         } else {
-          // ضمان بقاء واحد على الأقل
-          if (!inventoriesMeta.some(x => x.id === 'main')) {
-            inventoriesMeta.unshift({ id:'main', name:'الأساسي', type:'legacy-main' });
-          }
-          if (!inventoriesMeta.some(x => x.id === 'gemini')) {
-            inventoriesMeta.push({ id:'gemini', name:'Gemini', type:'legacy-gemini' });
-          }
+          const go = inventoriesMeta.find(x => x.id === GO_ID);
+          go.name = 'Go'; go.type='legacy-gemini';
+        }
+        if (!inventoriesMeta.some(x => x.id === NEW_GEMINI_ID)) {
+          inventoriesMeta.push({ id:NEW_GEMINI_ID, name:'Gemini', type:'custom' });
         }
 
         localStorage.setItem(META_KEY, JSON.stringify(inventoriesMeta));
 
-        // إذا حذفنا التبويب الحالي
         if (activeInvId === invId) {
           activeInvId = inventoriesMeta[0].id;
           localStorage.setItem(ACTIVE_KEY, activeInvId);
         }
 
-        // نظّف store
         delete store[invId];
 
         buildTabs();
@@ -841,7 +811,7 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
           left.className = "text-sm text-slate-100";
           left.innerHTML =
             `<div class="font-extrabold">${inv.name}</div>
-             <div class="text-xs glow-text">ID: ${inv.id}</div>`;
+             <div class="text-xs text-slate-300">ID: ${inv.id}</div>`;
 
           const right = document.createElement('div');
           right.className = "flex gap-2";
@@ -876,12 +846,12 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
 
       function updateUI() {
         const s = S();
-        const filtered = applySearch(s.inventory);
-        stockCountEl.textContent = filtered.length;
-        pulledCountEl.textContent = s.pulledCounter;
-        setStockCounterColor(filtered.length);
+        const stockLen = s.inventory.length;
 
-        // إذا في حساب محفوظ آخر مرة
+        stockCountEl.textContent = stockLen;
+        pulledCountEl.textContent = s.pulledCounter;
+        setStockCounterColor(stockLen);
+
         const last = s.currentAccount || getLastPulled(activeInvId);
         if (last) {
           s.currentAccount = last;
@@ -889,8 +859,6 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         } else {
           resultAreaEl.classList.add('hidden');
         }
-
-        updateSmartSummary();
       }
 
       function displayResult(acc) {
@@ -917,32 +885,10 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         return { ok: true, acc: { email, password, recovery, url } };
       }
 
-      function parseQuickLine(line) {
-        const m = line.match(/^([^\s@]+@[^\s@]+\.[^\s@]+)(.+)$/);
-        if (!m) return { ok: false };
-        const email = (m[1] || '').trim();
-        const password = (m[2] || '').trim();
-        if (!email || !password) return { ok: false };
-        return { ok: true, acc: { email, password, recovery: "غير متوفر", url: "#" } };
-      }
-
-      // Search filter
-      function applySearch(list){
-        const q = (searchInputEl.value || '').trim().toLowerCase();
-        if (!q) return list;
-        return list.filter(a => String(a.email || '').toLowerCase().includes(q));
-      }
-
-      function addMixedToStock(standardText, quickText) {
+      function addToStockInternal(standardText) {
         const s = S();
 
         const stdLines = (standardText || '')
-          .replace(/\r/g, '')
-          .split('\n')
-          .map(l => l.trim())
-          .filter(l => l.length >= 5);
-
-        const quickLines = (quickText || '')
           .replace(/\r/g, '')
           .split('\n')
           .map(l => l.trim())
@@ -964,15 +910,6 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
           s.inventory.push(acc); addedCount++;
         }
 
-        for (const line of quickLines) {
-          if (line.includes(';')) { invalidCount++; continue; }
-          const parsed = parseQuickLine(line);
-          if (!parsed.ok) { invalidCount++; continue; }
-          const acc = parsed.acc;
-          if (existsEmail(acc.email)) { duplicateCount++; continue; }
-          s.inventory.push(acc); addedCount++;
-        }
-
         saveActive();
         updateUI();
         return { addedCount, duplicateCount, invalidCount };
@@ -981,17 +918,15 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
       function addToStock() {
         flash(addBtn);
         const standard = bulkInputEl.value;
-        const quick = quickInputEl.value;
 
-        if (!standard.trim() && !quick.trim()) {
-          showToast('الحقول فارغة!', 'error');
+        if (!standard.trim()) {
+          showToast('الحقل فارغ!', 'error');
           return;
         }
 
-        const { addedCount, duplicateCount, invalidCount } = addMixedToStock(standard, quick);
+        const { addedCount, duplicateCount, invalidCount } = addToStockInternal(standard);
 
         bulkInputEl.value = '';
-        quickInputEl.value = '';
 
         const tabName = getInvMetaById(activeInvId)?.name || 'المخزون';
         let msg = `(${tabName}) تمت إضافة ${addedCount} حساب.`;
@@ -1004,27 +939,15 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
       function pullAccount() {
         flash(pullBtn);
         const s = S();
-        const list = applySearch(s.inventory);
 
-        if (list.length === 0) {
-          showToast('المخزون فارغ (أو لا يوجد نتيجة للبحث).', 'error');
+        if (s.inventory.length === 0) {
+          showToast('المخزون فارغ.', 'error');
           return;
         }
 
-        // إذا في بحث، نسحب أول نتيجة بحث من المخزون الحقيقي
-        let idx = 0;
-        if ((searchInputEl.value || '').trim()) {
-          const firstEmail = list[0].email;
-          idx = s.inventory.findIndex(a => a.email === firstEmail);
-          if (idx < 0) idx = 0;
-        }
-
-        const acc = s.inventory.splice(idx, 1)[0];
+        const acc = s.inventory.splice(0, 1)[0];
         s.currentAccount = acc;
         s.pulledCounter++;
-
-        // Undo info
-        setUndo(activeInvId, { acc, idx, time: Date.now() });
 
         saveActive();
         displayResult(acc);
@@ -1089,19 +1012,6 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         showToast(ok ? 'تم نسخ المعلومات كاملة' : 'فشل النسخ (جرّب HTTPS أو localhost)', ok ? 'success' : 'error');
       }
 
-      async function copyCompact() {
-        flash(copyCompactBtn);
-        const s = S();
-        const acc = s.currentAccount || getLastPulled(activeInvId);
-        if (!acc) {
-          showToast('لا يوجد حساب مسحوب.', 'error');
-          return;
-        }
-        const line = `${acc.email};${acc.password};${acc.recovery || 'غير متوفر'};${acc.url || '#'}`;
-        const ok = await copyText(line);
-        showToast(ok ? 'تم نسخ آخر حساب (سطر واحد)' : 'فشل النسخ', ok ? 'copy' : 'error');
-      }
-
       function deleteLastPulled() {
         flash(deleteLastBtn);
         const s = S();
@@ -1134,12 +1044,10 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         showToast('تم استرجاع الحساب إلى المخزون', 'success');
       }
 
-      function moveToGemini() {
-        flash(moveToGeminiBtn);
-
-        // يبقى مثل ما هو: من الأساسي إلى Gemini فقط
+      function moveAccountTo(targetInvId, targetLabel){
+        // يعمل فقط من الأساسي
         if (activeInvId !== 'main') {
-          showToast('زر النقل يعمل من (الأساسي) إلى (Gemini).', 'error');
+          showToast('أزرار النقل تعمل من (الأساسي) فقط.', 'error');
           return;
         }
 
@@ -1147,27 +1055,27 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         const acc = sMain.currentAccount || getLastPulled('main');
         if (!acc) { showToast('لا يوجد حساب مسحوب للنقل.', 'error'); return; }
 
-        // جهّز Gemini
-        if (!store['gemini']) store['gemini'] = { inventory: [], pulledCounter: 0, currentAccount: null };
-        // حمّل Gemini (حتى لو مو active)
-        const prevActive = activeInvId;
-        activeInvId = 'gemini';
-        loadActive();
-        const sGem = store['gemini'];
+        // جهّز الهدف
+        if (!store[targetInvId]) store[targetInvId] = { inventory: [], pulledCounter: 0, currentAccount: null };
 
-        if (sGem.inventory.some(a => a.email === acc.email)) {
+        const prevActive = activeInvId;
+
+        // حمّل الهدف
+        activeInvId = targetInvId;
+        loadActive();
+        const sTarget = store[targetInvId];
+
+        if (sTarget.inventory.some(a => a.email === acc.email)) {
           activeInvId = prevActive;
-          showToast('هذا الحساب موجود بالفعل في مخزون Gemini (تم منع التكرار).', 'error');
+          showToast(`هذا الحساب موجود بالفعل في مخزون ${targetLabel} (تم منع التكرار).`, 'error');
           return;
         }
 
-        sGem.inventory.unshift(acc);
-        // احفظ Gemini
-        activeInvId = 'gemini';
-        saveActive();
+        sTarget.inventory.unshift(acc);
 
-        // رجّع active
-        activeInvId = prevActive;
+        // احفظ الهدف
+        activeInvId = targetInvId;
+        saveActive();
 
         // احذف من شاشة الأساسي
         sMain.currentAccount = null;
@@ -1181,31 +1089,17 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         activeInvId = prevActive;
         updateUI();
 
-        showToast('تم نقل الحساب إلى مخزون Gemini', 'success');
+        showToast(`تم نقل الحساب إلى مخزون ${targetLabel}`, 'success');
       }
 
-      function undoLastPull() {
-        flash(undoPullBtn);
-        const undo = getUndo(activeInvId);
-        if (!undo || !undo.acc) {
-          showToast('لا يوجد عملية سحب للتراجع عنها.', 'error');
-          return;
-        }
+      function moveToGo(){
+        flash(moveToGoBtn);
+        moveAccountTo(GO_ID, 'Go');
+      }
 
-        const s = S();
-        const idx = Number.isFinite(undo.idx) ? Math.max(0, Math.min(undo.idx, s.inventory.length)) : 0;
-        if (!s.inventory.some(a => a.email === undo.acc.email)) {
-          s.inventory.splice(idx, 0, undo.acc);
-        }
-        if (s.pulledCounter > 0) s.pulledCounter--;
-
-        s.currentAccount = null;
-        clearLastPulled(activeInvId);
-        setUndo(activeInvId, null);
-
-        saveActive();
-        updateUI();
-        showToast('تم التراجع عن آخر سحب', 'success');
+      function moveToGemini(){
+        flash(moveToGeminiBtn);
+        moveAccountTo(NEW_GEMINI_ID, 'Gemini');
       }
 
       async function importTxtFile(file) {
@@ -1219,7 +1113,7 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
 
         try {
           const content = await file.text();
-          const { addedCount, duplicateCount, invalidCount } = addMixedToStock(content, '');
+          const { addedCount, duplicateCount, invalidCount } = addToStockInternal(content);
 
           let msg = `تم استيراد الملف: +${addedCount}`;
           if (duplicateCount) msg += ` (مكرر: ${duplicateCount})`;
@@ -1235,13 +1129,12 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         flash(exportBtn);
         const s = S();
 
-        const list = applySearch(s.inventory);
-        if (!list.length) {
-          showToast('المخزون فارغ (أو لا يوجد نتيجة للبحث).', 'error');
+        if (!s.inventory.length) {
+          showToast('المخزون فارغ.', 'error');
           return;
         }
 
-        const content = list
+        const content = s.inventory
           .map(acc => `${acc.email};${acc.password};${acc.recovery};${acc.url}`)
           .join('\n');
 
@@ -1259,141 +1152,105 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         a.remove();
 
         URL.revokeObjectURL(url);
-        showToast(`تم تصدير ${list.length} حساب`, 'success');
-      }
-
-      function updateSmartSummary(){
-        const s = S();
-        const list = applySearch(s.inventory);
-        const last = s.currentAccount || getLastPulled(activeInvId);
-
-        function strength(p){
-          if(!p) return 'غير معروف';
-          let score = 0;
-          if(p.length >= 10) score++;
-          if(/[A-Z]/.test(p)) score++;
-          if(/[0-9]/.test(p)) score++;
-          if(/[^A-Za-z0-9]/.test(p)) score++;
-          if(score <= 1) return 'ضعيف';
-          if(score === 2) return 'متوسط';
-          return 'قوي';
-        }
-
-        const tabName = getInvMetaById(activeInvId)?.name || 'المخزون';
-        const now = new Date().toLocaleDateString('ar-IQ');
-
-        smartSummary.textContent =
-          `التبويب: ${tabName} — التاريخ: ${now} — المتاح (حسب البحث): ${list.length} — `
-          + `المسحوب: ${s.pulledCounter} — `
-          + (last ? `آخر حساب: ${last.email} (قوة الباسورد: ${strength(last.password)})` : 'لا يوجد حساب مسحوب حالياً');
-      }
-
-      function toggleSmartPanel(){
-        flash(smartStatsBtn);
-        smartPanel.classList.toggle('hidden');
-        updateSmartSummary();
+        showToast(`تم تصدير ${s.inventory.length} حساب`, 'success');
       }
 
       // ==========================
-      // Quick Links (جديد)
+      // Links (حسب طلبك)
       // ==========================
       function loadLinks(){
         const raw = localStorage.getItem(LINKS_KEY);
         quickLinks = raw ? safeJsonParse(raw, []) : [];
         if (!Array.isArray(quickLinks)) quickLinks = [];
+
+        // إذا أول مرة: أضف روابطك الافتراضية
+        if (!quickLinks.length) {
+          quickLinks = [
+            { id:'l1', name:'التحقق من ChatGPT', url:'https://batch.1key.me/' },
+            { id:'l2', name:'بوت التحقق', url:'https://t.me/Veriyferbot' }
+          ];
+          saveLinks();
+        }
       }
       function saveLinks(){
         localStorage.setItem(LINKS_KEY, JSON.stringify(quickLinks));
       }
 
+      function openLinks(){
+        flash(linksBtn);
+        renderLinks();
+        linksModal.classList.add('show');
+      }
+      function closeLinks(){
+        linksModal.classList.remove('show');
+      }
+
       function renderLinks(){
         linksWrap.innerHTML = '';
 
-        if (!quickLinks.length) {
-          linksWrap.innerHTML = `
-            <div class="bg-slate-950/20 border border-slate-700/40 rounded-2xl p-4 text-sm text-slate-200">
-              لا يوجد روابط حالياً. اضغط <span class="font-bold text-sky-200">إضافة رابط</span> لإضافة أول رابط.
-            </div>
-          `;
-          return;
-        }
-
         for (const item of quickLinks) {
-          const card = document.createElement('div');
-          card.className = "bg-slate-950/20 border border-slate-700/40 rounded-2xl p-4 flex items-start justify-between gap-3";
+          const row = document.createElement('div');
+          row.className = "bg-slate-950/20 border border-slate-700/40 rounded-2xl p-3 flex items-center justify-between gap-3";
 
-          const left = document.createElement('div');
-          left.className = "min-w-0";
+          const left = document.createElement('button');
+          left.className = "min-w-0 text-right flex-1";
           left.innerHTML = `
-            <div class="font-extrabold text-white truncate cursor-pointer hover:underline" title="فتح الرابط">${item.name || 'رابط'}</div>
-            <div class="text-xs glow-text mt-1 break-all">${item.url || ''}</div>
+            <div class="font-extrabold text-white truncate hover:underline" title="اضغط للنسخ">${item.name || 'رابط'}</div>
+            <div class="text-xs text-slate-300 mt-1 break-all">${item.url || ''}</div>
           `;
 
-          left.querySelector('div.font-extrabold').addEventListener('click', () => {
-            const u = item.url || '';
-            if(!u) return;
-            window.open(u, '_blank', 'noopener');
+          // عند الضغط على اسم الرابط: ينسخ مباشرة
+          left.addEventListener('click', async () => {
+            const ok = await copyText(String(item.url || ''));
+            showToast(ok ? 'تم نسخ الرابط' : 'فشل النسخ', ok ? 'copy' : 'error');
           });
 
           const right = document.createElement('div');
           right.className = "flex gap-2 flex-shrink-0";
 
           const copyBtn = document.createElement('button');
-          copyBtn.className = "press-glow soft bg-blue-700/20 hover:bg-blue-700/28 border border-blue-700/30 text-blue-100 font-bold px-3 py-2 rounded-2xl text-sm";
-          copyBtn.innerHTML = `<i class="fa-solid fa-copy"></i>`;
-          copyBtn.title = 'نسخ الرابط';
+          copyBtn.className = "press-glow soft bg-blue-700/20 hover:bg-blue-700/28 border border-blue-700/30 text-blue-100 font-bold px-4 py-2 rounded-2xl text-sm";
+          copyBtn.textContent = 'نسخ';
           copyBtn.addEventListener('click', async () => {
             const ok = await copyText(String(item.url || ''));
             showToast(ok ? 'تم نسخ الرابط' : 'فشل النسخ', ok ? 'copy' : 'error');
           });
 
-          const delBtn = document.createElement('button');
-          delBtn.className = "press-glow soft bg-red-700/20 hover:bg-red-700/28 border border-red-700/30 text-red-100 font-bold px-3 py-2 rounded-2xl text-sm";
-          delBtn.innerHTML = `<i class="fa-solid fa-trash"></i>`;
-          delBtn.title = 'حذف الرابط';
-          delBtn.addEventListener('click', () => {
-            if(!confirm(`حذف الرابط: ${item.name} ؟`)) return;
-            quickLinks = quickLinks.filter(x => x.id !== item.id);
-            saveLinks();
-            renderLinks();
-            showToast('تم حذف الرابط', 'success');
+          const openBtn = document.createElement('button');
+          openBtn.className = "press-glow soft bg-emerald-700/20 hover:bg-emerald-700/28 border border-emerald-700/30 text-emerald-100 font-bold px-4 py-2 rounded-2xl text-sm";
+          openBtn.textContent = 'فتح';
+          openBtn.addEventListener('click', () => {
+            const u = item.url || '';
+            if(!u) return;
+            window.open(u, '_blank', 'noopener');
           });
 
           right.appendChild(copyBtn);
-          right.appendChild(delBtn);
+          right.appendChild(openBtn);
 
-          card.appendChild(left);
-          card.appendChild(right);
-          linksWrap.appendChild(card);
+          row.appendChild(left);
+          row.appendChild(right);
+          linksWrap.appendChild(row);
         }
       }
 
-      function addQuickLink(){
+      function addLink(){
         flash(addLinkBtn);
-        const name = prompt('اكتب اسم يظهر في الصفحة الرئيسية (مثال: نببل):');
+
+        const name = prompt('اسم الرابط:');
         if (!name || !String(name).trim()) { showToast('تم الإلغاء (الاسم فارغ).', 'error'); return; }
 
-        const urlIn = prompt('اكتب الرابط (مثال: https://example.com):');
+        const urlIn = prompt('الرابط:');
         if (!urlIn || !String(urlIn).trim()) { showToast('تم الإلغاء (الرابط فارغ).', 'error'); return; }
 
         const url = normalizeUrl(urlIn);
         if (!url) { showToast('الرابط غير صحيح.', 'error'); return; }
 
         const id = 'l_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,6);
-        quickLinks.unshift({ id, name: String(name).trim(), url });
-
+        quickLinks.push({ id, name: String(name).trim(), url });
         saveLinks();
         renderLinks();
         showToast('تمت إضافة الرابط ✅', 'success');
-      }
-
-      function clearAllLinks(){
-        flash(clearLinksBtn);
-        if(!confirm('هل تريد مسح كل الروابط؟')) return;
-        quickLinks = [];
-        saveLinks();
-        renderLinks();
-        showToast('تم مسح الروابط', 'success');
       }
 
       // Events
@@ -1405,6 +1262,8 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
 
       restoreBtn.addEventListener('click', restoreLastPulled);
       deleteLastBtn.addEventListener('click', deleteLastPulled);
+
+      moveToGoBtn.addEventListener('click', moveToGo);
       moveToGeminiBtn.addEventListener('click', moveToGemini);
 
       importBtn.addEventListener('click', () => { flash(importBtn); importFile.click(); });
@@ -1420,13 +1279,6 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
         card.addEventListener('click', () => { flash(card); copyField(card.getAttribute('data-copy')); });
       });
 
-      // Smart tools
-      smartStatsBtn.addEventListener('click', toggleSmartPanel);
-      clearSearchBtn.addEventListener('click', () => { flash(clearSearchBtn); searchInputEl.value=''; updateUI(); });
-      copyCompactBtn.addEventListener('click', copyCompact);
-      undoPullBtn.addEventListener('click', undoLastPull);
-      searchInputEl.addEventListener('input', () => updateUI());
-
       // Inventories UI
       addInvBtn.addEventListener('click', createNewInventory);
       settingsBtn.addEventListener('click', openSettings);
@@ -1436,8 +1288,12 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
       });
 
       // Links UI
-      addLinkBtn.addEventListener('click', addQuickLink);
-      clearLinksBtn.addEventListener('click', clearAllLinks);
+      linksBtn.addEventListener('click', openLinks);
+      closeLinksBtn.addEventListener('click', closeLinks);
+      addLinkBtn.addEventListener('click', addLink);
+      linksModal.addEventListener('click', (e) => {
+        if (e.target === linksModal) closeLinks();
+      });
 
       // ==========================
       // Initial load
@@ -1447,7 +1303,6 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
 
         // حمّل الروابط
         loadLinks();
-        renderLinks();
 
         // حمّل كل المخازن مرة حتى النقل وغيره يشتغل
         for (const inv of inventoriesMeta) {
@@ -1457,7 +1312,6 @@ oyufezusu066@gmail.comIsbzXRgTi77up"></textarea>
           activeInvId = prev;
         }
 
-        // فعّل الحالي
         buildTabs();
         setActiveInventory(activeInvId);
       });
