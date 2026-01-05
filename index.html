@@ -147,7 +147,6 @@
 
 <body class="min-h-screen flex flex-col items-center py-10 px-4">
 
-  <!-- ثلج خفيف شفاف -->
   <canvas id="snowCanvas"></canvas>
 
   <header class="w-full max-w-5xl mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-5 relative z-10">
@@ -169,7 +168,6 @@
     </div>
 
     <div class="flex gap-3 w-full md:w-auto items-center">
-      <!-- تبويبات ديناميكية + زر إضافة مخزون + روابط + إعدادات -->
       <div class="flex gap-2 items-center flex-wrap">
         <div id="tabsWrap" class="flex gap-2 flex-wrap"></div>
 
@@ -215,7 +213,6 @@
       </div>
 
       <div id="inputSection" class="space-y-4">
-        <!-- التنسيق القديم -->
         <textarea id="bulkInput" rows="5"
           class="w-full bg-slate-950/30 text-sm text-white p-4 rounded-2xl border border-slate-700/60 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition placeholder-slate-500"
           placeholder="ضع القائمة هنا بالتنسيق:
@@ -319,7 +316,7 @@ email;pass;recovery;url"></textarea>
               <span>نسخ المعلومات كاملة (شامل)</span>
             </button>
 
-            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-2">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
               <button id="restoreBtn"
                 class="press-glow soft bg-emerald-700/30 hover:bg-emerald-700/40 border border-emerald-700/35 text-emerald-100 font-bold py-3 rounded-2xl flex items-center justify-center gap-2">
                 <i class="fa-solid fa-rotate-left text-emerald-300"></i>
@@ -331,19 +328,10 @@ email;pass;recovery;url"></textarea>
                 <i class="fa-solid fa-xmark text-red-300"></i>
                 <span>حذف من الشاشة</span>
               </button>
-
-              <button id="moveToGoBtn"
-                class="press-glow soft bg-purple-700/25 hover:bg-purple-700/35 border border-purple-700/35 text-purple-100 font-bold py-3 rounded-2xl flex items-center justify-center gap-2">
-                <i class="fa-solid fa-right-left text-purple-300"></i>
-                <span>نقل إلى Go</span>
-              </button>
-
-              <button id="moveToGeminiBtn"
-                class="press-glow soft bg-sky-700/25 hover:bg-sky-700/35 border border-sky-700/35 text-sky-100 font-bold py-3 rounded-2xl flex items-center justify-center gap-2">
-                <i class="fa-solid fa-right-left text-sky-300"></i>
-                <span>نقل إلى Gemini</span>
-              </button>
             </div>
+
+            <!-- أزرار النقل الديناميكية (حسب المخازن) -->
+            <div id="moveButtonsWrap" class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2"></div>
 
             <p class="text-center text-[11px] text-slate-300">
               ✅ آخر حساب مسحوب يبقى محفوظ حتى لو خرجت ورجعت لاحقاً.
@@ -388,14 +376,14 @@ email;pass;recovery;url"></textarea>
     </div>
   </div>
 
-  <!-- Links Modal (جديد حسب طلبك) -->
+  <!-- Links Modal -->
   <div id="linksModal" class="modal-backdrop">
     <div class="glass-panel soft w-full max-w-2xl rounded-3xl p-5 border border-slate-700/50 shadow-2xl">
       <div class="flex justify-between items-center mb-3">
         <div class="flex items-center gap-2">
           <i class="fa-solid fa-link text-sky-300"></i>
           <span class="font-extrabold text-white">روابط</span>
-          <span class="text-xs text-slate-300">اضغط على اسم الرابط لنسخ — وزر فتح للفتح</span>
+          <span class="text-xs text-slate-300">اضغط على اسم الرابط لنسخ — زر فتح للفتح</span>
         </div>
         <div class="flex gap-2">
           <button id="addLinkBtn"
@@ -412,7 +400,7 @@ email;pass;recovery;url"></textarea>
       <div id="linksWrap" class="space-y-2"></div>
 
       <p class="text-[11px] text-slate-300 mt-3">
-        ✳️ عند الضغط على اسم الرابط: ينسخ مباشرة.
+        ✳️ (إزالة) لحذف الرابط — (↑ ↓) لتحريك الرابط للأعلى أو للأسفل.
       </p>
     </div>
   </div>
@@ -459,8 +447,7 @@ email;pass;recovery;url"></textarea>
       const restoreBtn = document.getElementById('restoreBtn');
       const deleteLastBtn = document.getElementById('deleteLastBtn');
 
-      const moveToGoBtn = document.getElementById('moveToGoBtn');
-      const moveToGeminiBtn = document.getElementById('moveToGeminiBtn');
+      const moveButtonsWrap = document.getElementById('moveButtonsWrap');
 
       const importBtn = document.getElementById('importBtn');
       const importFile = document.getElementById('importFile');
@@ -477,25 +464,21 @@ email;pass;recovery;url"></textarea>
       const META_KEY = 'smartInv_inventories_meta_v1';
       const ACTIVE_KEY = 'smartInv_activeInventory_v1';
 
-      // IDs حسب طلبك:
-      // - المخزون القديم الذي كان اسمه Gemini صار اسمه Go (نفس الـ id والـ keys حتى لا تضيع الإيميلات)
+      // كان Gemini وصار Go (نفس الـ id والـ keys حتى لا تضيع الإيميلات)
       const GO_ID = 'gemini';              // legacy keys smartGemini_*
       const NEW_GEMINI_ID = 'gemini_new';  // مخزون ثالث جديد باسم Gemini
 
-      // Legacy keys (لا نلمسها حتى ما ينحذف القديم)
+      // Legacy keys
       const LEGACY_KEYS = {
         main:   { data:'smartInventory_data', pulled:'smartInventory_pulled', last:'smartInventory_lastPulled', undo:'smartInventory_undo' },
         gemini: { data:'smartGemini_data',    pulled:'smartGemini_pulled',   last:'smartGemini_lastPulled',   undo:'smartGemini_undo' }
       };
 
-      // Meta: [{id,name,type:'legacy-main'|'legacy-gemini'|'custom'}]
       let inventoriesMeta = [];
       let activeInvId = 'main';
-
-      // Data store per inventory id
       let store = {};
 
-      // Links storage (global)
+      // Links storage
       const LINKS_KEY = 'smartInv_quickLinks_v2';
       let quickLinks = [];
 
@@ -579,7 +562,6 @@ email;pass;recovery;url"></textarea>
         if (meta.type === 'legacy-main') return LEGACY_KEYS.main;
         if (meta.type === 'legacy-gemini') return LEGACY_KEYS.gemini;
 
-        // custom
         const p = `smartInv_${meta.id}`;
         return {
           data:   `${p}_data`,
@@ -589,7 +571,6 @@ email;pass;recovery;url"></textarea>
         };
       }
 
-      // Active getters
       function K(){ return keysFor(activeInvId); }
       function S(){
         if(!store[activeInvId]) store[activeInvId] = { inventory: [], pulledCounter: 0, currentAccount: null };
@@ -637,28 +618,19 @@ email;pass;recovery;url"></textarea>
         if (!Array.isArray(inventoriesMeta) || inventoriesMeta.length === 0) {
           inventoriesMeta = [
             { id:'main', name:'الأساسي', type:'legacy-main' },
-            // كان Gemini وصار Go (نفس الـ id legacy-gemini للحفاظ على البيانات)
             { id:GO_ID, name:'Go', type:'legacy-gemini' },
-            // مخزون ثالث جديد باسم Gemini
             { id:NEW_GEMINI_ID, name:'Gemini', type:'custom' }
           ];
           localStorage.setItem(META_KEY, JSON.stringify(inventoriesMeta));
         } else {
-          // تأكد وجود main
           if (!inventoriesMeta.some(x => x.id === 'main')) {
             inventoriesMeta.unshift({ id:'main', name:'الأساسي', type:'legacy-main' });
           }
 
-          // تأكد وجود Go (legacy gemini) + تأكيد اسمه Go (بدون حذف البيانات)
           const go = inventoriesMeta.find(x => x.id === GO_ID);
-          if (!go) {
-            inventoriesMeta.push({ id:GO_ID, name:'Go', type:'legacy-gemini' });
-          } else {
-            go.name = 'Go';
-            go.type = 'legacy-gemini';
-          }
+          if (!go) inventoriesMeta.push({ id:GO_ID, name:'Go', type:'legacy-gemini' });
+          else { go.name = 'Go'; go.type = 'legacy-gemini'; }
 
-          // تأكد وجود Gemini الجديد
           if (!inventoriesMeta.some(x => x.id === NEW_GEMINI_ID)) {
             inventoriesMeta.push({ id:NEW_GEMINI_ID, name:'Gemini', type:'custom' });
           }
@@ -689,15 +661,10 @@ email;pass;recovery;url"></textarea>
         updateHeaderTitle();
         buildTabs();
         updateUI();
-
-        // أزرار النقل تظهر فقط في "الأساسي"
-        const showMove = (activeInvId === 'main');
-        moveToGoBtn.style.display = showMove ? '' : 'none';
-        moveToGeminiBtn.style.display = showMove ? '' : 'none';
+        renderMoveButtons(); // مهم: يحدث أزرار النقل حسب المخازن + حسب التبويب الحالي
       }
 
       function updateHeaderTitle(){
-        // حسب طلبك: الاسم العلوي "المخزون" فقط
         titleNameEl.textContent = 'المخزون';
       }
 
@@ -712,8 +679,8 @@ email;pass;recovery;url"></textarea>
           let icon = 'fa-layer-group';
           let iconColor = 'text-blue-300';
 
-          if (inv.id === GO_ID) { icon = 'fa-bolt'; iconColor = 'text-emerald-300'; }          // Go
-          if (inv.id === NEW_GEMINI_ID) { icon = 'fa-wand-magic-sparkles'; iconColor = 'text-sky-300'; } // Gemini الجديد
+          if (inv.id === GO_ID) { icon = 'fa-bolt'; iconColor = 'text-emerald-300'; }
+          if (inv.id === NEW_GEMINI_ID) { icon = 'fa-wand-magic-sparkles'; iconColor = 'text-sky-300'; }
           if (inv.id !== 'main' && inv.id !== GO_ID && inv.id !== NEW_GEMINI_ID) { icon = 'fa-box'; iconColor = 'text-amber-300'; }
 
           btn.innerHTML = `<i class="fa-solid ${icon} ml-2 ${iconColor}"></i>${inv.name}`;
@@ -744,6 +711,8 @@ email;pass;recovery;url"></textarea>
         store[id] = { inventory: [], pulledCounter: 0, currentAccount: null };
 
         buildTabs();
+        // يبقى المخزون الجديد تحت (في آخر التبويبات) لأننا push
+        // ثم نفعله مباشرة (كما كان) + سيظهر زر النقل له في (الأساسي)
         setActiveInventory(id);
         showToast('تم إنشاء مخزون جديد ✅', 'success');
       }
@@ -771,16 +740,14 @@ email;pass;recovery;url"></textarea>
 
         inventoriesMeta = inventoriesMeta.filter(x => x.id !== invId);
 
-        // لا نخلي meta فاضية + ضمان رجوع الرئيسي + Go + Gemini
         if (!inventoriesMeta.some(x => x.id === 'main')) {
           inventoriesMeta.unshift({ id:'main', name:'الأساسي', type:'legacy-main' });
         }
-        if (!inventoriesMeta.some(x => x.id === GO_ID)) {
-          inventoriesMeta.push({ id:GO_ID, name:'Go', type:'legacy-gemini' });
-        } else {
-          const go = inventoriesMeta.find(x => x.id === GO_ID);
-          go.name = 'Go'; go.type='legacy-gemini';
-        }
+
+        const go = inventoriesMeta.find(x => x.id === GO_ID);
+        if (!go) inventoriesMeta.push({ id:GO_ID, name:'Go', type:'legacy-gemini' });
+        else { go.name='Go'; go.type='legacy-gemini'; }
+
         if (!inventoriesMeta.some(x => x.id === NEW_GEMINI_ID)) {
           inventoriesMeta.push({ id:NEW_GEMINI_ID, name:'Gemini', type:'custom' });
         }
@@ -1045,7 +1012,7 @@ email;pass;recovery;url"></textarea>
       }
 
       function moveAccountTo(targetInvId, targetLabel){
-        // يعمل فقط من الأساسي
+        // فقط من الأساسي
         if (activeInvId !== 'main') {
           showToast('أزرار النقل تعمل من (الأساسي) فقط.', 'error');
           return;
@@ -1055,12 +1022,10 @@ email;pass;recovery;url"></textarea>
         const acc = sMain.currentAccount || getLastPulled('main');
         if (!acc) { showToast('لا يوجد حساب مسحوب للنقل.', 'error'); return; }
 
-        // جهّز الهدف
         if (!store[targetInvId]) store[targetInvId] = { inventory: [], pulledCounter: 0, currentAccount: null };
 
         const prevActive = activeInvId;
 
-        // حمّل الهدف
         activeInvId = targetInvId;
         loadActive();
         const sTarget = store[targetInvId];
@@ -1073,33 +1038,38 @@ email;pass;recovery;url"></textarea>
 
         sTarget.inventory.unshift(acc);
 
-        // احفظ الهدف
         activeInvId = targetInvId;
         saveActive();
 
-        // احذف من شاشة الأساسي
         sMain.currentAccount = null;
         clearLastPulled('main');
 
-        // حفظ الأساسي
         activeInvId = 'main';
         saveActive();
 
-        // رجع تبويب المستخدم الحالي
         activeInvId = prevActive;
         updateUI();
 
         showToast(`تم نقل الحساب إلى مخزون ${targetLabel}`, 'success');
       }
 
-      function moveToGo(){
-        flash(moveToGoBtn);
-        moveAccountTo(GO_ID, 'Go');
-      }
+      // ✅ أزرار النقل الديناميكية: (النقل إلى Go / Gemini / وأي مخزون جديد)
+      function renderMoveButtons(){
+        moveButtonsWrap.innerHTML = '';
 
-      function moveToGemini(){
-        flash(moveToGeminiBtn);
-        moveAccountTo(NEW_GEMINI_ID, 'Gemini');
+        // تظهر فقط في الأساسي
+        if (activeInvId !== 'main') return;
+
+        const targets = inventoriesMeta.filter(x => x.id !== 'main');
+        if (!targets.length) return;
+
+        for (const t of targets) {
+          const btn = document.createElement('button');
+          btn.className = "press-glow soft bg-slate-800/55 hover:bg-slate-700/60 border border-slate-700/60 text-white font-bold py-3 rounded-2xl flex items-center justify-center gap-2";
+          btn.innerHTML = `<i class="fa-solid fa-right-left text-slate-200"></i><span>النقل إلى ${t.name}</span>`;
+          btn.addEventListener('click', () => moveAccountTo(t.id, t.name));
+          moveButtonsWrap.appendChild(btn);
+        }
       }
 
       async function importTxtFile(file) {
@@ -1156,14 +1126,13 @@ email;pass;recovery;url"></textarea>
       }
 
       // ==========================
-      // Links (حسب طلبك)
+      // Links (إزالة + تحريك ↑ ↓)
       // ==========================
       function loadLinks(){
         const raw = localStorage.getItem(LINKS_KEY);
         quickLinks = raw ? safeJsonParse(raw, []) : [];
         if (!Array.isArray(quickLinks)) quickLinks = [];
 
-        // إذا أول مرة: أضف روابطك الافتراضية
         if (!quickLinks.length) {
           quickLinks = [
             { id:'l1', name:'التحقق من ChatGPT', url:'https://batch.1key.me/' },
@@ -1185,10 +1154,32 @@ email;pass;recovery;url"></textarea>
         linksModal.classList.remove('show');
       }
 
+      function swapLinks(i, j){
+        if (i < 0 || j < 0) return;
+        if (i >= quickLinks.length || j >= quickLinks.length) return;
+        const tmp = quickLinks[i];
+        quickLinks[i] = quickLinks[j];
+        quickLinks[j] = tmp;
+        saveLinks();
+        renderLinks();
+      }
+
+      function removeLinkById(id){
+        const item = quickLinks.find(x => x.id === id);
+        if (!item) return;
+        if (!confirm(`إزالة الرابط: ${item.name} ؟`)) return;
+        quickLinks = quickLinks.filter(x => x.id !== id);
+        saveLinks();
+        renderLinks();
+        showToast('تم إزالة الرابط', 'success');
+      }
+
       function renderLinks(){
         linksWrap.innerHTML = '';
 
-        for (const item of quickLinks) {
+        for (let idx = 0; idx < quickLinks.length; idx++) {
+          const item = quickLinks[idx];
+
           const row = document.createElement('div');
           row.className = "bg-slate-950/20 border border-slate-700/40 rounded-2xl p-3 flex items-center justify-between gap-3";
 
@@ -1198,15 +1189,29 @@ email;pass;recovery;url"></textarea>
             <div class="font-extrabold text-white truncate hover:underline" title="اضغط للنسخ">${item.name || 'رابط'}</div>
             <div class="text-xs text-slate-300 mt-1 break-all">${item.url || ''}</div>
           `;
-
-          // عند الضغط على اسم الرابط: ينسخ مباشرة
           left.addEventListener('click', async () => {
             const ok = await copyText(String(item.url || ''));
             showToast(ok ? 'تم نسخ الرابط' : 'فشل النسخ', ok ? 'copy' : 'error');
           });
 
           const right = document.createElement('div');
-          right.className = "flex gap-2 flex-shrink-0";
+          right.className = "flex gap-2 flex-shrink-0 flex-wrap";
+
+          const upBtn = document.createElement('button');
+          upBtn.className = "press-glow soft bg-slate-800/55 hover:bg-slate-700/60 border border-slate-700/60 text-white font-bold px-3 py-2 rounded-2xl text-sm";
+          upBtn.textContent = '↑';
+          upBtn.title = 'تصعيد';
+          upBtn.disabled = idx === 0;
+          upBtn.style.opacity = idx === 0 ? '.45' : '1';
+          upBtn.addEventListener('click', () => swapLinks(idx, idx - 1));
+
+          const downBtn = document.createElement('button');
+          downBtn.className = "press-glow soft bg-slate-800/55 hover:bg-slate-700/60 border border-slate-700/60 text-white font-bold px-3 py-2 rounded-2xl text-sm";
+          downBtn.textContent = '↓';
+          downBtn.title = 'تنزيل';
+          downBtn.disabled = idx === quickLinks.length - 1;
+          downBtn.style.opacity = idx === quickLinks.length - 1 ? '.45' : '1';
+          downBtn.addEventListener('click', () => swapLinks(idx, idx + 1));
 
           const copyBtn = document.createElement('button');
           copyBtn.className = "press-glow soft bg-blue-700/20 hover:bg-blue-700/28 border border-blue-700/30 text-blue-100 font-bold px-4 py-2 rounded-2xl text-sm";
@@ -1225,8 +1230,16 @@ email;pass;recovery;url"></textarea>
             window.open(u, '_blank', 'noopener');
           });
 
+          const removeBtn = document.createElement('button');
+          removeBtn.className = "press-glow soft bg-red-700/20 hover:bg-red-700/28 border border-red-700/30 text-red-100 font-bold px-4 py-2 rounded-2xl text-sm";
+          removeBtn.textContent = 'إزالة';
+          removeBtn.addEventListener('click', () => removeLinkById(item.id));
+
+          right.appendChild(upBtn);
+          right.appendChild(downBtn);
           right.appendChild(copyBtn);
           right.appendChild(openBtn);
+          right.appendChild(removeBtn);
 
           row.appendChild(left);
           row.appendChild(right);
@@ -1263,9 +1276,6 @@ email;pass;recovery;url"></textarea>
       restoreBtn.addEventListener('click', restoreLastPulled);
       deleteLastBtn.addEventListener('click', deleteLastPulled);
 
-      moveToGoBtn.addEventListener('click', moveToGo);
-      moveToGeminiBtn.addEventListener('click', moveToGemini);
-
       importBtn.addEventListener('click', () => { flash(importBtn); importFile.click(); });
       importFile.addEventListener('change', async () => {
         const file = importFile.files && importFile.files[0] ? importFile.files[0] : null;
@@ -1279,15 +1289,14 @@ email;pass;recovery;url"></textarea>
         card.addEventListener('click', () => { flash(card); copyField(card.getAttribute('data-copy')); });
       });
 
-      // Inventories UI
       addInvBtn.addEventListener('click', createNewInventory);
+
       settingsBtn.addEventListener('click', openSettings);
       closeSettingsBtn.addEventListener('click', closeSettings);
       settingsModal.addEventListener('click', (e) => {
         if (e.target === settingsModal) closeSettings();
       });
 
-      // Links UI
       linksBtn.addEventListener('click', openLinks);
       closeLinksBtn.addEventListener('click', closeLinks);
       addLinkBtn.addEventListener('click', addLink);
@@ -1300,8 +1309,6 @@ email;pass;recovery;url"></textarea>
       // ==========================
       window.addEventListener('load', () => {
         ensureMeta();
-
-        // حمّل الروابط
         loadLinks();
 
         // حمّل كل المخازن مرة حتى النقل وغيره يشتغل
@@ -1317,7 +1324,7 @@ email;pass;recovery;url"></textarea>
       });
 
       /* =========================
-         Snow (خفيف وشفاف وسريع)
+         Snow
          ========================= */
       const canvas = document.getElementById('snowCanvas');
       const ctx = canvas.getContext('2d', { alpha: true });
